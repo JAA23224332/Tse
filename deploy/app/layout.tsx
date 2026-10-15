@@ -8,7 +8,7 @@ export const metadata = { title: "Painel do 2º Turno 2026" };
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const admin = ehAdmin(await emailAtual());
+  const admin = await emailAtual().then(ehAdmin).catch(() => false); // se o Clerk falhar, a página ainda abre
   return (
     <html lang="pt-BR">
       <head>
