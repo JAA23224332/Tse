@@ -144,8 +144,8 @@ ul.fontes{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:v
         <option value="ab">Mais abstenções</option>
         <option value="el">Maior eleitorado</option>
         <option value="apert">Disputa mais apertada (20 mil+ eleitores)</option>
-        <option value="virouA">Bolsonaro venceu em 2022, Lula lidera agora</option>
-        <option value="virouB">Lula venceu em 2022, Flávio lidera agora</option>
+        <option value="virouA">Bolsonaro venceu em 2022 e Lula lidera entre os dois agora</option>
+        <option value="virouB">Lula venceu em 2022 e Flávio lidera entre os dois agora</option>
       </select>
     </div>
     <div class="tbl" id="muntbl"></div>
@@ -287,7 +287,7 @@ function defaults(race, preset = "neutra") {
     else if (preset === "2022") p.tr[g.key] = [70, 30];
     else p.tr[g.key] = [0, 0];
   }
-  if (preset === "2022") p.dComp = 0.4;
+  if (preset === "2022") p.dComp = 0;  // os 70/30 já embutem os novos votantes de 2022
   return p;
 }
 function params() {
@@ -364,11 +364,11 @@ function renderSim() {
   nv.oninput = () => { p.novosA = +nv.value; nv.previousElementSibling.textContent = p.novosA + "%"; renderOut(); };
 
   const presets = [["neutra", "Divisão neutra (40/40)"], ["zero", "Ninguém transfere"]];
-  if (r.pres) presets.push(["2022", "Repetir o saldo de 2022"]);
+  if (r.pres) presets.push(["2022", "Saldo líquido nacional de 2022 (70/30)"]);
   $("presets").innerHTML = presets.map(([k, l]) => `<button class="btn" type="button" data-p="${k}">${l}</button>`).join("");
   $("presets").querySelectorAll("button").forEach(b => b.onclick = () => { state.params[r.id] = defaults(r, b.dataset.p); renderSim(); });
   $("simnotes").innerHTML = r.pres
-    ? `<span>"Repetir o saldo de 2022": no último 2º turno, Bolsonaro ficou com cerca de 70% e Lula com 30% do crescimento entre os turnos, e o comparecimento subiu 0,4 ponto. Aplicado aqui aos eliminados de 2026.</span>`
+    ? `<span>"Saldo líquido nacional de 2022 (70/30)": no último 2º turno, Bolsonaro ficou com cerca de 70% e Lula com 30% do crescimento entre os turnos (incluindo novos votantes). É um agregado nacional, aplicado aqui por igual a cada eliminado de 2026; em 2022 os eliminados eram de centro, em 2026 são majoritariamente de direita.</span>`
     : `<span>Votos e eliminados do 1º turno para governador em ${r.id}, somados por município.</span>`;
   renderOut();
 }

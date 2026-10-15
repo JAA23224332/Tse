@@ -53,6 +53,16 @@ PERFIL_CHAVE = {
 }
 
 
+def atualizado_texto():
+    """Data e % apurado informados pelo TSE na coleta (coleta_1t_meta.json), em vez de texto fixo."""
+    try:
+        with open(f"{T}/coleta_1t_meta.json", encoding="utf-8") as f:
+            m = json.load(f)
+        return f"1º turno 04/10/2026 — TSE, {m['pct_secoes']:.0f}% das seções totalizadas (totalização de {m['gerado_em']})"
+    except (OSError, KeyError):
+        return "1º turno 04/10/2026 — TSE"
+
+
 def ler(nome, **kw):
     return pd.read_csv(f"{T}/{nome}", sep=";", dtype={"cd_tse": str, "cd_ibge": str}, **kw)
 
@@ -290,7 +300,7 @@ if __name__ == "__main__":
     mun.columns = ["uf", "nome", "el", "ab", "br", "nu", "va", "fl", "lu", "el_c", "l22",
                    *[f"p{i}" for i in range(len(PERFIL_CHAVE))]]
     painel = {
-        "atualizado": "1º turno 04/10/2026 — TSE, 100% das seções totalizadas",
+        "atualizado": atualizado_texto(),
         "candidatos_eliminados": cand_elim,
         "brasil": {k: int(br.iloc[0][c]) for k, c in [
             ("eleitorado", "eleitorado"), ("comparecimento", "comparecimento"), ("abstencao", "abstencao"),

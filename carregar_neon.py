@@ -49,6 +49,9 @@ def carregar(cur, df, tabela, chave=None):
             cp.write_row([None if (isinstance(v, float) and pd.isna(v)) else v for v in linha])
     if chave:
         cur.execute(f"create index on {tabela} ({chave})")
+    # a tabela foi recriada: devolve a permissão de leitura ao usuário do agente (raiox_leitor)
+    cur.execute(f"grant select on {tabela} to raiox_leitor")
+    cur.connection.commit()  # uma transação por tabela: o espaço da tabela antiga é liberado antes da próxima
     print(f"{tabela}: {len(df)} linhas, {len(df.columns)} colunas")
 
 
@@ -61,11 +64,19 @@ if __name__ == "__main__":
         if os.path.exists(f"{T}/locais_votacao_2026.csv"):
             loc = pd.read_csv(f"{T}/locais_votacao_2026.csv", sep=";", dtype={"cd_tse": str})
             carregar(cur, loc, "locais_votacao", "uf, cd_tse")
-        if os.path.exists(f"{T}/secoes_2026.csv"):
-            sec = pd.read_csv(f"{T}/secoes_2026.csv", sep=";", dtype={"cd_tse": str, "cep": str})
+        # seções (269 MB no banco): só recarrega se o CSV for mais novo que a última carga ou com RECARREGAR_SECOES=1
+        marca = f"{T}/.secoes_carregadas"
+        csv_sec = f"{T}/secoes_2026.csv"
+        if os.path.exists(csv_sec) and (os.environ.get("RECARREGAR_SECOES") == "1" or not os.path.exists(marca)
+                                        or os.path.getmtime(csv_sec) > os.path.getmtime(marca)):
+            cur.execute("drop table if exists secoes"); cur.connection.commit()  # libera espaço antes de copiar
+            sec = pd.read_csv(csv_sec, sep=";", dtype={"cd_tse": str, "cep": str})
             carregar(cur, sec, "secoes", "uf, cd_tse, zona, secao")
             cur.execute("create index on secoes (uf, zona, secao)")
             carregar(cur, pd.read_csv(f"{T}/candidatos_2026.csv", sep=";", dtype=str), "candidatos")
+            open(marca, "w").close()
+        else:
+            print("secoes: sem mudança, não recarregada")
         cur.execute("""
             comment on table municipios is 'Resultado do 1º turno de 2026 para presidente por município, com 2022, perfil do eleitorado e potencial de ganho para Lula';
             comment on table ufs is 'Agregado por UF do 1º turno de 2026 e potencial de ganho para Lula';

@@ -58,7 +58,7 @@ button,select,input{font:inherit;color:var(--ink)}
 .btn:hover{background:var(--surface-3)}
 .btn.primary{background:var(--ouro);color:#1a1200;border-color:var(--ouro);font-weight:600}.btn.primary:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.5;cursor:default}
-select,input[type=search],input[type=text],input[type=email],input[type=tel],textarea{border:1px solid var(--line-2);background:var(--surface-2);border-radius:var(--r);padding:8px 10px;font-size:14px;color:var(--ink)}
+select,input[type=search],input[type=text],input[type=email]{border:1px solid var(--line-2);background:var(--surface-2);border-radius:var(--r);padding:8px 10px;font-size:14px;color:var(--ink)}
 select option{background:var(--surface-2)}
 input::placeholder{color:var(--ink-3)}
 input[type=range]{width:100%;accent-color:var(--ouro);background:transparent}

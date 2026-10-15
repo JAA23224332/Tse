@@ -33,7 +33,7 @@ mun = mun.merge(p22[["cd_tse", "m22"]], on="cd_tse", how="left").rename(columns=
 mun = mun.set_index("cd_ibge")
 
 COLS = ["uf", "municipio", "eleitorado", "pct_lula", "pct_flavio", "margem_lula", "pct_abstencao", "pct_lula_22t1",
-        "eliminados", "ganho_total", "ganho_mobilizar", "ganho_recuperar", "ganho_persuadir", "territorio", "acao",
+        "eliminados", "ganho_total", "ganho_mobilizar", "saldo_liquido", "ganho_persuadir", "territorio", "acao",
         "m22", "cd_tse", "capital", "lula", "flavio", "validos", "cen"]
 
 
@@ -369,7 +369,7 @@ function detalhe(cd){
     <div class="row"><span>Abstenção</span><b>${pc(g("pct_abstencao"))}</b></div>
     <div class="row"><span>Votos de eliminados</span><b>${fmt(g("eliminados"))}</b></div>
     <div class="row" style="margin-top:6px"><span><b style="font-weight:600">Votos a ganhar</b></span><b style="color:var(--ouro)">${fmt(g("ganho_total"))}</b></div>
-    <div class="row"><span>mobilizar</span><b>${fmt(g("ganho_mobilizar"))}</b></div><div class="row"><span>recuperar</span><b>${fmt(g("ganho_recuperar"))}</b></div><div class="row"><span>persuadir</span><b>${fmt(g("ganho_persuadir"))}</b></div>
+    <div class="row"><span>mobilizar</span><b>${fmt(g("ganho_mobilizar"))}</b></div><div class="row"><span>saldo líquido</span><b>${fmt(g("saldo_liquido"))}</b></div><div class="row"><span>persuadir</span><b>${fmt(g("ganho_persuadir"))}</b></div>
     <p class="small muted" style="margin-top:6px">${g("acao")}</p>`;
   $("fechar").onclick = () => fixar(null);
 }

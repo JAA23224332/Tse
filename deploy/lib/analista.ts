@@ -19,17 +19,18 @@ Tabela municipios (uma linha por município, 5.570 + exterior como uf 'ZZ'):
   pct_lula_22t1, pct_lula_22t2 (% de Lula em 2022, 1º e 2º turno), perda_vs_2022_votos,
   territorio ('Reduto de Lula' | 'Disputado' | 'Reduto de Flávio'), caiu_vs_2022 (boolean),
   eliminados (votos dos candidatos que não foram ao 2º turno), brancos, nulos,
-  ganho_mobilizar, ganho_recuperar, ganho_eliminados, ganho_brancos_nulos, ganho_persuadir, ganho_total
-    (votos líquidos que a campanha de Lula pode ganhar, segundo as premissas do motor de estratégia),
+  ganho_mobilizar, ganho_persuadir, ganho_total (votos que a campanha de Lula pode ganhar: potencial, segundo as premissas),
+  mobilizar_liquido, persuadir_liquido, saldo_liquido (o mesmo descontando o que Flávio ganha com os mesmos movimentos;
+    saldo_liquido negativo = o movimento favorece Flávio ali), eliminados_para_lula, eliminados_para_flavio, bn_para_lula, bn_para_flavio,
   ganho_por_mil_eleitores, acao (tática recomendada), rank_ganho, rank_eficiencia,
   pct_mulheres, pct_18_24_anos, pct_60_69_anos, pct_ensino_superior, pct_at_fundamental (perfil do eleitorado, em %).
 Tabela ufs (uma linha por UF): uf, regiao, municipios, eleitorado, lula, flavio, validos, abstencao,
-  ganho_mobilizar, ganho_recuperar, ganho_persuadir, ganho_total, perda_vs_2022, margem_lula, pct_lula,
+  ganho_mobilizar, ganho_persuadir, ganho_total, saldo_liquido, perda_vs_2022, margem_lula, pct_lula,
   pct_abstencao, ganho_por_mil, peso_nacional_pct, share_do_ganho_pct.
 Tabela locais_votacao (pode não existir ainda; uma linha por local de votação, ex.: escola):
   uf, cd_tse, zona, nr_local, municipio, local, endereco, bairro, lat, lon, aptos, lula, flavio, brancos, nulos,
   eliminados, comparecimento, abstencao, validos, pct_lula, pct_flavio, pct_abstencao, margem_lula,
-  ganho_mobilizar, ganho_persuadir, ganho_total, territorio.
+  ganho_mobilizar, ganho_persuadir, ganho_total, mobilizar_liquido, persuadir_liquido, saldo_liquido, territorio.
 Tabela secoes (pode não existir ainda; uma linha por seção eleitoral, ~500 mil):
   uf, cd_tse, municipio, zona, secao, tipo_secao ('Principal' | 'Agregadora' | 'Agregada'), secao_principal, nr_local, local, tipo_local,
   endereco, bairro, cep, lat, lon, acessibilidade, eleitores_secao, aptos, comparecimento, abstencao, validos, lula, flavio, eliminados,

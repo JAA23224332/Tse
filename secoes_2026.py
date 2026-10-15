@@ -7,13 +7,16 @@ Saída:   dados/tratados/secoes_2026.csv — uma seção por linha, com votos de
          dados/tratados/candidatos_2026.csv — número e nome de cada candidato a presidente.
 """
 
+import os
 import zipfile
 
 import pandas as pd
 
 B, T = "dados/brutos", "dados/tratados"
+TURNO = int(os.environ.get("TURNO", "1"))  # 1 ou 2; os ZIPs do TSE passam a trazer os dois turnos após 25/10
+SUFIXO = "" if TURNO == 1 else f"_{TURNO}t"
 CHAVE = ["SG_UF", "CD_MUNICIPIO", "NR_ZONA", "NR_SECAO"]
-COLS = CHAVE + ["CD_CARGO", "NR_VOTAVEL", "NM_VOTAVEL", "QT_VOTOS", "NR_LOCAL_VOTACAO"]
+COLS = CHAVE + ["NR_TURNO", "CD_CARGO", "NR_VOTAVEL", "NM_VOTAVEL", "QT_VOTOS", "NR_LOCAL_VOTACAO"]
 
 
 def ler_votos():
@@ -22,7 +25,7 @@ def ler_votos():
         nome = [n for n in z.namelist() if n.endswith(".csv")][0]
         for chunk in pd.read_csv(z.open(nome), sep=";", encoding="latin1", usecols=COLS,
                                  dtype={"CD_MUNICIPIO": str, "NR_VOTAVEL": str}, chunksize=1_000_000):
-            c = chunk[(chunk.CD_CARGO == 1) & (chunk.SG_UF != "ZZ")]
+            c = chunk[(chunk.NR_TURNO == TURNO) & (chunk.CD_CARGO == 1) & (chunk.SG_UF != "ZZ")]
             nomes.update(dict(zip(c.NR_VOTAVEL, c.NM_VOTAVEL)))
             partes.append(c.groupby(CHAVE + ["NR_LOCAL_VOTACAO", "NR_VOTAVEL"], as_index=False).QT_VOTOS.sum())
     g = pd.concat(partes).groupby(CHAVE + ["NR_LOCAL_VOTACAO", "NR_VOTAVEL"], as_index=False).QT_VOTOS.sum()
@@ -33,7 +36,7 @@ def ler_votos():
 
 
 def ler_secoes():
-    cols = ["SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA", "NR_SECAO", "DS_TIPO_SECAO_AGREGADA", "NR_SECAO_PRINCIPAL",
+    cols = ["NR_TURNO", "SG_UF", "CD_MUNICIPIO", "NM_MUNICIPIO", "NR_ZONA", "NR_SECAO", "DS_TIPO_SECAO_AGREGADA", "NR_SECAO_PRINCIPAL",
             "NR_LOCAL_VOTACAO", "NM_LOCAL_VOTACAO", "DS_TIPO_LOCAL", "DS_ENDERECO", "NM_BAIRRO", "NR_CEP",
             "NR_LATITUDE", "NR_LONGITUDE", "DS_SITU_SECAO_ACESSIBILIDADE", "QT_ELEITOR_SECAO", "QT_ELEITOR_ELEICAO_FEDERAL"]
     partes = []
@@ -43,6 +46,7 @@ def ler_secoes():
                 partes.append(pd.read_csv(z.open(n), sep=";", encoding="latin1", usecols=cols,
                                           dtype={"CD_MUNICIPIO": str, "NR_CEP": str, "NR_LATITUDE": str, "NR_LONGITUDE": str}))
     df = pd.concat(partes)
+    df = df[df.NR_TURNO == TURNO].drop(columns="NR_TURNO")
     df["CD_MUNICIPIO"] = df.CD_MUNICIPIO.str.zfill(5)
     for c in ["NR_LATITUDE", "NR_LONGITUDE"]:
         df[c] = pd.to_numeric(df[c].str.replace(",", "."), errors="coerce").where(lambda s: s.abs() > 0.01)
@@ -79,7 +83,7 @@ if __name__ == "__main__":
              "endereco", "bairro", "cep", "lat", "lon", "acessibilidade", "eleitores_secao", "aptos", "comparecimento", "abstencao",
              "validos", "lula", "flavio", "eliminados", "brancos", "nulos", "pct_lula", "pct_flavio", "pct_abstencao", "margem_lula"]
     df = df[ordem + [c for c in vcols if c not in ("v13", "v22", "v95", "v96")]].sort_values(["uf", "cd_tse", "zona", "secao"])
-    df.to_csv(f"{T}/secoes_2026.csv", sep=";", index=False, encoding="utf-8-sig")
+    df.to_csv(f"{T}/secoes_2026{SUFIXO}.csv", sep=";", index=False, encoding="utf-8-sig")
     cand = pd.DataFrame(sorted(nomes.items()), columns=["numero", "nome"])
     cand.to_csv(f"{T}/candidatos_2026.csv", sep=";", index=False, encoding="utf-8-sig")
     print(len(df), "seções |", df.aptos.sum(), "aptos |", df.comparecimento.sum(), "comparecimento |", df.lula.sum(), "Lula |", df.flavio.sum(), "Flávio")

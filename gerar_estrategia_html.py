@@ -19,7 +19,8 @@ with open(f"{T}/estrategia_dados.json", encoding="utf-8") as f:
 locais = {}
 try:
     loc = pd.read_csv(f"{T}/locais_votacao_2026.csv", sep=";", dtype={"cd_tse": str})
-    top_mun = set(pd.DataFrame(dados["municipios"], columns=dados["colunas"]).nlargest(300, "ganho_total").cd_tse)
+    est = pd.read_csv(f"{T}/estrategia_municipio.csv", sep=";", dtype={"cd_tse": str})
+    top_mun = set(est[est.uf != "ZZ"].nlargest(300, "ganho_total").cd_tse)
     loc = loc[loc.cd_tse.isin(top_mun)].sort_values("ganho_total", ascending=False)
     for cd, g in loc.groupby("cd_tse"):
         locais[cd] = g.head(25)[["local", "bairro", "aptos", "pct_lula", "pct_abstencao", "ganho_mobilizar", "ganho_persuadir", "ganho_total", "territorio"]].fillna("").values.tolist()
@@ -66,7 +67,7 @@ __BASE__
   </header>
 
   <section id="virada">
-    <div class="head"><h2>Caminho da virada</h2><p class="muted">Quatro alavancas. Mexa nas premissas e veja se a conta fecha.</p></div>
+    <div class="head"><h2>Caminho da virada</h2><p class="muted">Duas alavancas (mobilizar e persuadir), contadas em votos líquidos: o que Lula ganha menos o que Flávio ganha com o mesmo movimento. Mexa nas hipóteses e veja o resultado em três cenários.</p></div>
     <div class="sim">
       <div class="panel" id="premissas"></div>
       <div style="display:grid;gap:14px">
@@ -82,7 +83,7 @@ __BASE__
   </section>
 
   <section id="ufs">
-    <div class="head"><h2>Por estado</h2><p class="muted">Ganho potencial com as premissas atuais. No mapa, quanto mais dourado, mais votos a ganhar. Nas barras, a composição: mobilizar (vermelho), recuperar (vermelho claro), persuadir (cinza).</p></div>
+    <div class="head"><h2>Por estado</h2><p class="muted">Ganho potencial com as premissas atuais. No mapa, quanto mais dourado, mais votos a ganhar. Nas barras, a composição: mobilizar (vermelho), persuadir (cinza).</p></div>
     <div class="ufs2"><div id="ufaz"></div><div class="panel" id="ufchart"></div></div>
   </section>
 
@@ -92,7 +93,7 @@ __BASE__
       <input type="search" id="busca" placeholder="Buscar município" aria-label="Buscar município">
       <select id="ufsel" aria-label="Estado"><option value="">Todos os estados</option></select>
       <select id="terrsel" aria-label="Território"><option value="">Todos os territórios</option><option>Reduto de Lula</option><option>Disputado</option><option>Reduto de Flávio</option></select>
-      <select id="ordsel" aria-label="Ordenar por"><option value="ganho_total">Maior ganho total</option><option value="ganho_mobilizar">Maior ganho por mobilização</option><option value="ganho_recuperar">Maior recuperação vs 2022</option><option value="ganho_persuadir">Maior ganho por persuasão</option><option value="ganho_por_mil_eleitores">Mais eficiente (ganho por mil eleitores)</option><option value="eleitorado">Maior eleitorado</option></select>
+      <select id="ordsel" aria-label="Ordenar por"><option value="ganho_total">Maior ganho total</option><option value="ganho_mobilizar">Maior ganho por mobilização</option><option value="perda_vs_2022_votos">Maior perda desde 2022 (para recuperar)</option><option value="saldo_liquido">Maior saldo líquido</option><option value="ganho_persuadir">Maior ganho por persuasão</option><option value="ganho_por_mil_eleitores">Mais eficiente (ganho por mil eleitores)</option><option value="eleitorado">Maior eleitorado</option></select>
     </div>
     <div class="tbl" id="muntbl"></div>
     <div class="filters"><button class="btn" id="mais" type="button">Mostrar mais 50</button><span class="small muted" id="muncount"></span></div>
@@ -101,10 +102,11 @@ __BASE__
   <section id="metodo">
     <div class="head"><h2>Como os números são calculados</h2></div>
     <ul class="small muted" style="margin:0;padding-left:18px;display:grid;gap:4px;max-width:80ch">
-      <li><b>Mobilizar</b>: se a abstenção cair X pontos num lugar onde Lula lidera, os novos votantes seguem a proporção local e o ganho líquido é a margem local sobre eles. Onde Flávio lidera, mobilizar não rende e não entra na conta.</li>
-      <li><b>Recuperar</b>: diferença entre o % de Lula no 1º turno de 2022 e no 1º turno de 2026, aplicada aos votos válidos de 2026, vezes a fração que a campanha acredita recuperar.</li>
-      <li><b>Persuadir</b>: votos de cada candidato eliminado vezes a fração que se espera trazer, mais brancos e nulos vezes a fração convertível.</li>
-      <li><b>Ganho estimado de Flávio</b>: espelho das premissas (o que não vem para Lula, em parte vai para o adversário). É uma estimativa conservadora para a conta não fechar sozinha.</li>
+      <li><b>Mobilizar</b>: se a abstenção cair X pontos num município, os novos votantes seguem a proporção local. Rende onde Lula lidera e custa onde Flávio lidera, porque o adversário também mobiliza. A queda é uma hipótese por tipo de território.</li>
+      <li><b>Persuadir</b>: para cada candidato eliminado, uma fração vai para Lula e outra para Flávio (o resto fica em casa); brancos e nulos idem. O que conta no placar é a diferença entre as duas.</li>
+      <li><b>Potencial × saldo</b>: "votos a ganhar" é o que Lula pode conquistar num lugar (orienta onde ir); "saldo líquido" desconta o que Flávio ganha com o mesmo movimento (é o que muda o placar nacional).</li>
+      <li><b>Cenários</b>: pessimista, base e otimista multiplicam as hipóteses (menos/mais transferência para Lula, menos/mais mobilização). Nenhum é previsão: são tetos para raciocinar.</li>
+      <li><b>Perda vs 2022</b>: diferença entre o % de Lula no 1º turno de 2022 e no de 2026, no mesmo município. Não é somada ao ganho (esses eleitores já estão nos eliminados ou na abstenção); serve para apontar onde recuperar.</li>
       <li>Fonte: TSE, resultado oficial do 1º turno por seção, resultado de 2022 e perfil do eleitorado. Locais de votação: votos por seção agregados por local, com aptos do cadastro.</li>
     </ul>
   </section>
@@ -120,98 +122,106 @@ const tit = s => String(s).toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase())
 const $ = id => document.getElementById(id);
 const DEFICIT = D.virada.deficit; $("deficit").textContent = fmt(DEFICIT);
 const C = D.colunas; const M = D.municipios.map(r => Object.fromEntries(C.map((c,i)=>[c,r[i]])));
+const ECOLS = D.eliminados_cols, TERRS = ["Reduto de Lula","Disputado","Reduto de Flávio"];
 const P = JSON.parse(JSON.stringify(D.premissas));
-const ELIM = Object.entries(D.eliminados_brasil).sort((a,b)=>b[1]-a[1]);
+const ELIM = ECOLS.map(c => [c, D.eliminados_brasil[c]]).sort((a,b)=>b[1]-a[1]);
 const nome = s => s.replace(/\s*\([^)]*\)$/,""), partido = s => (s.match(/\(([^)]*)\)$/)||[,""])[1];
 
-// recalcula os ganhos por município com as premissas atuais (mesma fórmula do motor em Python)
-function recalc(){
-  const base = D.premissas;
+// mesma fórmula do motor em Python (estrategia.py), por município, com as premissas atuais
+function recalc(prem = P){
   for (const m of M){
     const margem = m.pct_lula - m.pct_flavio;
-    m.g_mob = margem>0 ? m.eleitorado*P.queda_abstencao_pp/100*margem/100 : 0;
-    m.g_rec = m.ganho_recuperar/base.recuperacao_2022*P.recuperacao_2022;
-    // eliminados: usa a fração média nacional das premissas (o detalhe por candidato só existe no Python)
-    m.g_eli = m.eliminados * txElim();
-    m.g_bn = (m.brancos+m.nulos)*P.brancos_nulos;
-    m.g_tot = m.g_mob+m.g_rec+m.g_eli+m.g_bn;
+    const queda = prem.queda_abstencao[m.territorio] ?? 0;
+    m.mob_liq = m.eleitorado*queda/100*margem/100;
+    m.g_mob = Math.max(0, m.mob_liq);
+    let el = 0, ef = 0; for (const c of ECOLS){ const v = m[c]||0, f = prem.eliminados[c]; el += v*f.lula; ef += v*f.flavio; }
+    const bn = m.brancos + m.nulos;
+    m.g_eli = el; m.g_bn = bn*prem.brancos_nulos.lula; m.f_eli = ef; m.f_bn = bn*prem.brancos_nulos.flavio;
+    m.g_per = m.g_eli + m.g_bn; m.per_liq = m.g_per - m.f_eli - m.f_bn;
+    m.g_tot = m.g_mob + m.g_per; m.saldo = m.mob_liq + m.per_liq; m.g_mil = 1000*m.g_tot/m.eleitorado;
   }
 }
-function txElim(){ // fração média (ponderada pelos votos nacionais) dos eliminados que vem para Lula
-  let s=0,t=0; for (const [c,v] of ELIM){ s+=v*(P.transferencia[c]??0); t+=v; } return t?s/t:0;
+function cenario(prem, c){ // multiplicadores do cenário sobre as premissas (lula+flavio ≤ 1)
+  const m = D.cenarios[c], par = x => { let l = Math.min(1, x.lula*m.lula), f = Math.min(1, x.flavio*m.flavio); if (l+f>1) f = 1-l; return {lula:l, flavio:f}; };
+  return { eliminados: Object.fromEntries(ECOLS.map(k=>[k, par(prem.eliminados[k])])), brancos_nulos: par(prem.brancos_nulos),
+    queda_abstencao: {"Reduto de Lula": prem.queda_abstencao["Reduto de Lula"]*m.mob_lula, "Disputado": prem.queda_abstencao["Disputado"]*(m.mob_lula+m.mob_flavio)/2, "Reduto de Flávio": prem.queda_abstencao["Reduto de Flávio"]*m.mob_flavio} };
 }
-function txContra(){ let s=0,t=0; for (const [c,v] of ELIM){ s+=v*(1-(P.transferencia[c]??0))*0.6; t+=v; } return t?s/t:0; }
+function totais(prem){ recalc(prem); const t = {mob:0, el:0, ef:0, bl:0, bf:0, saldo:0}; for (const m of M){ t.mob+=m.mob_liq; t.el+=m.g_eli; t.ef+=m.f_eli; t.bl+=m.g_bn; t.bf+=m.f_bn; t.saldo+=m.saldo; } return t; }
 
 function renderPremissas(){
-  let h = `<h3>Premissas</h3><p class="small muted" style="margin:4px 0 8px">Fração dos votos de cada eliminado que vem para Lula.</p>`;
+  const slider = (id, rot, val, max, step, cls) => `<label class="sl ${cls}"><span>${rot} <b class="v" id="v_${id}">${val}</b></span><input type="range" id="${id}" min="0" max="${max}" step="${step}" value="${val}" aria-label="${rot}"></label>`;
+  let h = `<h3>Hipóteses</h3><p class="small muted" style="margin:4px 0 8px">Para cada eliminado: quanto dos votos vai para Lula e quanto vai para Flávio (o resto fica em casa).</p>`;
   for (const [c,v] of ELIM){
-    const f = P.transferencia[c] ?? 0;
-    h += `<div class="srow"><div class="lbl"><b>${esc(tit(nome(c)))} <span class="tag">${esc(partido(c))}</span></b><span class="num muted">${fmt(v)} votos · <span class="v" id="v_${esc(c)}">${Math.round(f*100)}%</span></span></div><input type="range" min="0" max="100" step="5" value="${Math.round(f*100)}" data-k="${esc(c)}"></div>`;
+    const f = P.eliminados[c];
+    h += `<div class="srow" data-c="${esc(c)}"><div class="lbl"><b>${esc(tit(nome(c)))} <span class="tag">${esc(partido(c))}</span></b><span class="num muted">${fmt(v)} votos</span></div><div class="pair">${slider("l_"+ECOLS.indexOf(c), "→ Lula", Math.round(f.lula*100)+"%", 100, 5, "ra")}${slider("f_"+ECOLS.indexOf(c), "→ Flávio", Math.round(f.flavio*100)+"%", 100, 5, "rb")}</div></div>`;
   }
-  h += `<div class="srow"><div class="lbl"><b>Brancos e nulos convertidos</b><span class="v" id="v_bn">${Math.round(P.brancos_nulos*100)}%</span></div><input type="range" min="0" max="50" step="5" value="${Math.round(P.brancos_nulos*100)}" data-k="brancos_nulos"></div>`;
-  h += `<div class="srow"><div class="lbl"><b>Queda da abstenção em redutos de Lula</b><span class="v" id="v_ab">${P.queda_abstencao_pp.toLocaleString("pt-BR")} p.p.</span></div><input type="range" min="0" max="8" step="0.5" value="${P.queda_abstencao_pp}" data-k="queda_abstencao_pp"></div>`;
-  h += `<div class="srow"><div class="lbl"><b>Perda de 2022 recuperada</b><span class="v" id="v_rc">${Math.round(P.recuperacao_2022*100)}%</span></div><input type="range" min="0" max="100" step="5" value="${Math.round(P.recuperacao_2022*100)}" data-k="recuperacao_2022"></div>`;
-  h += `<div class="filters" style="margin-top:8px"><button class="btn" type="button" id="reset">Voltar às premissas iniciais</button></div>`;
+  h += `<div class="srow"><div class="lbl"><b>Brancos e nulos que passam a votar</b></div><div class="pair">${slider("bn_l", "→ Lula", Math.round(P.brancos_nulos.lula*100)+"%", 50, 5, "ra")}${slider("bn_f", "→ Flávio", Math.round(P.brancos_nulos.flavio*100)+"%", 50, 5, "rb")}</div></div>`;
+  h += `<div class="srow"><div class="lbl"><b>Queda da abstenção (pontos do eleitorado)</b></div><div class="pair tri">${TERRS.map((t,i)=>slider("q_"+i, t, P.queda_abstencao[t].toLocaleString("pt-BR"), 8, 0.5, "")).join("")}</div></div>`;
+  h += `<div class="filters" style="margin-top:8px"><button class="btn" type="button" id="reset">Voltar às hipóteses iniciais</button></div>`;
   $("premissas").innerHTML = h;
   $("premissas").querySelectorAll("input[type=range]").forEach(i => i.oninput = () => {
-    const k = i.dataset.k, v = +i.value;
-    if (k==="brancos_nulos"){P.brancos_nulos=v/100; $("v_bn").textContent=v+"%";}
-    else if (k==="queda_abstencao_pp"){P.queda_abstencao_pp=v; $("v_ab").textContent=v.toLocaleString("pt-BR")+" p.p.";}
-    else if (k==="recuperacao_2022"){P.recuperacao_2022=v/100; $("v_rc").textContent=v+"%";}
-    else {P.transferencia[k]=v/100; document.getElementById("v_"+k).textContent=v+"%";}
+    const id = i.id, v = +i.value;
+    if (id.startsWith("l_")||id.startsWith("f_")){ const c = ECOLS[+id.slice(2)], lado = id[0]==="l"?"lula":"flavio", outro = lado==="lula"?"flavio":"lula"; P.eliminados[c][lado] = v/100; if (P.eliminados[c].lula + P.eliminados[c].flavio > 1){ P.eliminados[c][outro] = 1 - v/100; const o = $((outro==="lula"?"l_":"f_")+id.slice(2)); o.value = Math.round(P.eliminados[c][outro]*100); $("v_"+o.id).textContent = o.value+"%"; } $("v_"+id).textContent = v+"%"; }
+    else if (id==="bn_l"||id==="bn_f"){ P.brancos_nulos[id==="bn_l"?"lula":"flavio"] = v/100; $("v_"+id).textContent = v+"%"; }
+    else if (id.startsWith("q_")){ P.queda_abstencao[TERRS[+id.slice(2)]] = v; $("v_"+id).textContent = v.toLocaleString("pt-BR"); }
     tudo();
   });
   $("reset").onclick = () => { Object.assign(P, JSON.parse(JSON.stringify(D.premissas))); renderPremissas(); tudo(); };
 }
 
 function renderAlavancas(){
-  const mob = M.reduce((s,m)=>s+m.g_mob,0), rec = M.reduce((s,m)=>s+m.g_rec,0), eli = M.reduce((s,m)=>s+m.g_eli,0), bn = M.reduce((s,m)=>s+m.g_bn,0);
-  const bruto = mob+rec+eli+bn, contra = ELIM.reduce((s,[c,v])=>s+v*(1-(P.transferencia[c]??0))*0.6,0);
-  const saldo = bruto - contra - DEFICIT, max = Math.max(bruto, contra, DEFICIT);
-  const row = (l,v,c="") => `<div class="row"><span>${l}</span><b class="num">${fmt(v)}</b></div><div class="bar ${c}"><i style="width:${100*v/max}%"></i></div>`;
-  $("alavancas").innerHTML = `<h3>Votos líquidos para Lula</h3>` + row("Mobilizar redutos (abstenção −"+P.queda_abstencao_pp.toLocaleString("pt-BR")+" p.p.)", mob) + row("Recuperar perdas de 2022", rec) + row("Votos de eliminados", eli) + row("Brancos e nulos", bn)
-    + `<div class="row" style="margin-top:6px"><span><b>Ganho bruto</b></span><b class="num">${fmt(bruto)}</b></div>` + row("Ganho estimado de Flávio (espelho das premissas)", contra, "c");
-  $("saldo").innerHTML = `<div class="stat"><b>${fmt(DEFICIT)}</b><span>déficit do 1º turno</span></div><div class="stat ${saldo>=0?"pos":"neg"}"><b>${saldo>=0?"+":"−"}${fmt(Math.abs(saldo))}</b><span>${saldo>=0?"saldo projetado: a conta fecha":"saldo projetado: ainda falta"}</span></div><div class="stat"><b>${fmt(bruto-contra)}</b><span>votos líquidos ganhos sobre o adversário</span></div>`;
+  const cen = {}; for (const c of Object.keys(D.cenarios)) cen[c] = totais(cenario(P, c));
+  const t = totais(P);  // deixa M com o cenário base (o das suas hipóteses)
+  const max = Math.max(Math.abs(t.mob), t.el, t.ef, t.bl, t.bf, DEFICIT, 1);
+  const row = (l, v, cls) => `<div class="row"><span>${l}</span><b class="num">${v<0?"−":""}${fmt(Math.abs(v))}</b></div><div class="bar ${cls}"><i style="width:${100*Math.abs(v)/max}%"></i></div>`;
+  $("alavancas").innerHTML = `<h3>Com as suas hipóteses (cenário base)</h3>`
+    + row("Mobilização: saldo líquido (Lula − Flávio)", t.mob, t.mob>=0?"":"c")
+    + row("Eliminados → Lula", t.el, "") + row("Eliminados → Flávio", t.ef, "c")
+    + row("Brancos e nulos → Lula", t.bl, "") + row("Brancos e nulos → Flávio", t.bf, "c")
+    + `<div class="row" style="margin-top:6px"><span><b>Saldo líquido para Lula</b></span><b class="num">${t.saldo<0?"−":"+"}${fmt(Math.abs(t.saldo))}</b></div>`
+    + row("Déficit do 1º turno (com exterior)", DEFICIT, "c");
+  const res = c => cen[c].saldo - DEFICIT;
+  $("saldo").innerHTML = ["pessimista","base","otimista"].map(c => { const r = res(c); return `<div class="stat ${r>=0?"pos":"neg"}"><b>${r>=0?"+":"−"}${fmt(Math.abs(r))}</b><span>cenário ${c}: ${r>=0?"Lula passa à frente":"ainda falta"}</span></div>`; }).join("");
+  $("saldo").insertAdjacentHTML("beforeend", `<p class="small muted" style="grid-column:1/-1;margin:0">Resultado = saldo líquido − déficit. Pessimista e otimista multiplicam as suas hipóteses (transferência para Lula ×${D.cenarios.pessimista.lula}/×${D.cenarios.otimista.lula}; para Flávio ×${D.cenarios.pessimista.flavio}/×${D.cenarios.otimista.flavio}; mobilização idem). Nenhum é previsão.</p>`);
 }
 
 function renderTerr(){
   $("terr").innerHTML = D.territorios.map(t => {
     const cor = t.territorio.includes("Lula")?"lula":t.territorio.includes("Flávio")?"flavio":"";
     const tat = t.territorio==="Reduto de Lula" ? "Tática: mobilizar. Cada ponto a menos de abstenção é voto líquido." : t.territorio==="Disputado" ? "Tática: persuadir. Eliminados, brancos e nulos decidem." : "Tática: limitar perdas e buscar eliminados que não gostam do adversário.";
-    const ganho = M.filter(m=>m.territorio===t.territorio).reduce((s,m)=>s+m.g_tot,0);
-    return `<div class="panel"><span class="tag ${cor}">${esc(t.territorio)}</span><span class="t">${fmt(t.n)} municípios</span><span class="small muted">${mi(t.eleitorado)} eleitores · Lula ${pc(100*t.lula/(t.lula+t.flavio))} dos dois · abstenção ${pc(100*t.abstencao/t.eleitorado)}</span><span class="small"><b class="num">${fmt(ganho)}</b> votos a ganhar com as premissas</span><span class="small muted">${tat}</span></div>`;
+    const ms = M.filter(m=>m.territorio===t.territorio), ganho = ms.reduce((s,m)=>s+m.g_tot,0), saldo = ms.reduce((s,m)=>s+m.saldo,0);
+    return `<div class="panel"><span class="tag ${cor}">${esc(t.territorio)}</span><span class="t">${fmt(t.n)} municípios</span><span class="small muted">${mi(t.eleitorado)} eleitores · Lula ${pc(100*t.lula/(t.lula+t.flavio))} dos dois · abstenção ${pc(100*t.abstencao/t.eleitorado)}</span><span class="small"><b class="num">${fmt(ganho)}</b> votos a ganhar · saldo líquido <b class="num">${saldo<0?"−":"+"}${fmt(Math.abs(saldo))}</b></span><span class="small muted">${tat}</span></div>`;
   }).join("");
 }
 
 function renderUF(){
-  const g = {}; for (const m of M){ const u = g[m.uf] ??= {mob:0,rec:0,per:0,el:0}; u.mob+=m.g_mob; u.rec+=m.g_rec; u.per+=m.g_eli+m.g_bn; u.el+=m.eleitorado; }
-  const rows = Object.entries(g).map(([uf,u])=>({uf,...u,tot:u.mob+u.rec+u.per})).sort((a,b)=>b.tot-a.tot); const max = rows[0].tot;
-  $("ufchart").innerHTML = `<h3 style="margin-bottom:8px">Ganho potencial por estado</h3>` + rows.map(r => `<div class="uf"><b>${r.uf}</b><div class="t" title="mobilizar ${fmt(r.mob)} · recuperar ${fmt(r.rec)} · persuadir ${fmt(r.per)}"><i style="flex:${r.mob};background:var(--lula)"></i><i style="flex:${r.rec};background:var(--lula-2);opacity:.7"></i><i style="flex:${r.per};background:var(--neutral)"></i><i style="flex:${max-r.tot};background:transparent"></i></div><span class="num" style="text-align:right">${fmt(r.tot)}</span></div>`).join("");
-  const itens = {}; for (const r of rows) itens[r.uf] = { cor: corOuro(r.tot/max), texto: r.tot>=1e6 ? (r.tot/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mi" : Math.round(r.tot/1e3)+" mil", titulo: `${r.uf}: ${fmt(r.tot)} votos a ganhar (mobilizar ${fmt(r.mob)}, recuperar ${fmt(r.rec)}, persuadir ${fmt(r.per)})` };
+  const g = {}; for (const m of M){ if (m.uf==="ZZ") continue; const u = g[m.uf] ??= {mob:0,per:0,saldo:0,el:0}; u.mob+=m.g_mob; u.per+=m.g_per; u.saldo+=m.saldo; u.el+=m.eleitorado; }
+  const rows = Object.entries(g).map(([uf,u])=>({uf,...u,tot:u.mob+u.per})).sort((a,b)=>b.tot-a.tot); const max = rows[0].tot;
+  $("ufchart").innerHTML = `<h3 style="margin-bottom:8px">Ganho potencial por estado</h3>` + rows.map(r => `<div class="uf"><b>${r.uf}</b><div class="t" title="mobilizar ${fmt(r.mob)} · persuadir ${fmt(r.per)} · saldo líquido ${fmt(r.saldo)}"><i style="flex:${r.mob};background:var(--lula)"></i><i style="flex:${r.per};background:var(--neutral)"></i><i style="flex:${max-r.tot};background:transparent"></i></div><span class="num" style="text-align:right">${fmt(r.tot)}</span></div>`).join("");
+  const itens = {}; for (const r of rows) itens[r.uf] = { cor: corOuro(r.tot/max), texto: r.tot>=1e6 ? (r.tot/1e6).toLocaleString("pt-BR",{maximumFractionDigits:1})+" mi" : Math.round(r.tot/1e3)+" mil", titulo: `${r.uf}: ${fmt(r.tot)} votos a ganhar (mobilizar ${fmt(r.mob)}, persuadir ${fmt(r.per)}); saldo líquido ${fmt(r.saldo)}` };
   azulejos($("ufaz"), itens, { legenda: `<span>mais dourado, mais votos a ganhar</span>`, onClick: uf => { $("ufsel").value = uf; limite = 50; aberto = null; renderMun(); $("municipios").scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}); } });
 }
 
 let limite = 50, aberto = null;
 function filtra(){
   const q = $("busca").value.trim().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase(), uf=$("ufsel").value, te=$("terrsel").value, ord=$("ordsel").value;
-  const k = {ganho_total:"g_tot",ganho_mobilizar:"g_mob",ganho_recuperar:"g_rec",ganho_persuadir:"g_per",ganho_por_mil_eleitores:"g_mil",eleitorado:"eleitorado"}[ord];
-  for (const m of M){ m.g_per = m.g_eli+m.g_bn; m.g_mil = 1000*m.g_tot/m.eleitorado; }
-  return M.filter(m => (!uf||m.uf===uf) && (!te||m.territorio===te) && (!q||m.municipio.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().includes(q))).sort((a,b)=>b[k]-a[k]);
+  const k = {ganho_total:"g_tot",ganho_mobilizar:"g_mob",saldo_liquido:"saldo",ganho_persuadir:"g_per",ganho_por_mil_eleitores:"g_mil",eleitorado:"eleitorado",perda_vs_2022_votos:"perda_vs_2022_votos"}[ord];
+  return M.filter(m => m.uf!=="ZZ").filter(m => (!uf||m.uf===uf) && (!te||m.territorio===te) && (!q||m.municipio.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().includes(q))).sort((a,b)=>b[k]-a[k]);
 }
 function renderMun(){
   const r = filtra(), vis = r.slice(0,limite), max = Math.max(...vis.map(m=>m.g_tot),1);
   $("muncount").textContent = `${fmt(Math.min(limite,r.length))} de ${fmt(r.length)} municípios`; $("mais").hidden = r.length<=limite;
-  $("muntbl").innerHTML = `<table><thead><tr><th>Município</th><th>Território</th><th class="n">Eleitorado</th><th class="n">% Lula</th><th class="n">Abst.</th><th class="n">Lula 2022</th><th>Ganho total</th><th class="n">Mobilizar</th><th class="n">Recuperar</th><th class="n">Persuadir</th><th class="n">p/ mil</th></tr></thead><tbody>${vis.map((m,i)=>{
+  $("muntbl").innerHTML = `<table><thead><tr><th>Município</th><th>Território</th><th class="n">Eleitorado</th><th class="n">% Lula</th><th class="n">Abst.</th><th class="n">Lula 2022</th><th>Votos a ganhar</th><th class="n">Mobilizar</th><th class="n">Persuadir</th><th class="n">Saldo líquido</th><th class="n">Perda vs 2022</th><th class="n">p/ mil</th></tr></thead><tbody>${vis.map((m,i)=>{
     const cor = m.territorio.includes("Lula")?"lula":m.territorio.includes("Flávio")?"flavio":"";
-    return `<tr data-i="${i}" tabindex="0" style="cursor:pointer" aria-expanded="${aberto===m}"><td><b>${esc(tit(m.municipio))}</b> <span class="small muted">${m.uf}</span>${D.locais[m.cd_tse]?' <span class="tag">locais</span>':''}</td><td><span class="tag ${cor}">${esc(m.territorio)}</span></td><td class="n">${fmt(m.eleitorado)}</td><td class="n">${pc(m.pct_lula)}</td><td class="n">${pc(m.pct_abstencao)}</td><td class="n">${m.pct_lula_22t1==null?"—":pc(m.pct_lula_22t1)}</td><td><span class="hb"><i style="width:${100*m.g_tot/max}%"></i></span><span class="num">${fmt(m.g_tot)}</span></td><td class="n">${fmt(m.g_mob)}</td><td class="n">${fmt(m.g_rec)}</td><td class="n">${fmt(m.g_eli+m.g_bn)}</td><td class="n">${m.g_mil.toLocaleString("pt-BR",{maximumFractionDigits:1})}</td></tr>${aberto===m?locaisRow(m):""}`;
+    return `<tr data-i="${i}" tabindex="0" style="cursor:pointer" aria-expanded="${aberto===m}"><td><b>${esc(tit(m.municipio))}</b> <span class="small muted">${m.uf}</span>${D.locais[m.cd_tse]?' <span class="tag">locais</span>':''}</td><td><span class="tag ${cor}">${esc(m.territorio)}</span></td><td class="n">${fmt(m.eleitorado)}</td><td class="n">${pc(m.pct_lula)}</td><td class="n">${pc(m.pct_abstencao)}</td><td class="n">${m.pct_lula_22t1==null?"—":pc(m.pct_lula_22t1)}</td><td><span class="hb"><i style="width:${100*m.g_tot/max}%"></i></span><span class="num">${fmt(m.g_tot)}</span></td><td class="n">${fmt(m.g_mob)}</td><td class="n">${fmt(m.g_per)}</td><td class="n ${m.saldo<0?"flavio":"lula"}">${m.saldo<0?"−":"+"}${fmt(Math.abs(m.saldo))}</td><td class="n">${fmt(m.perda_vs_2022_votos||0)}${m.caiu_vs_2022?" ▼":""}</td><td class="n">${m.g_mil.toLocaleString("pt-BR",{maximumFractionDigits:1})}</td></tr>${aberto===m?locaisRow(m):""}`;
   }).join("")}</tbody></table>`;
   $("muntbl").querySelectorAll("tr[data-i]").forEach(tr => { const t=()=>{const m=vis[+tr.dataset.i]; aberto = aberto===m?null:m; renderMun();}; tr.onclick=t; tr.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();t();}}; });
 }
 function locaisRow(m){
   const L = D.locais[m.cd_tse];
-  if (!L) return `<tr class="exp"><td colspan="11"><span class="small muted">Locais de votação disponíveis só para os 300 municípios de maior ganho.</span></td></tr>`;
+  if (!L) return `<tr class="exp"><td colspan="12"><span class="small muted">Locais de votação disponíveis só para os 300 municípios de maior ganho.</span></td></tr>`;
   const ci = Object.fromEntries(D.locais_colunas.map((c,i)=>[c,i]));
-  return `<tr class="exp"><td colspan="11"><div style="display:grid;gap:6px"><b>Locais de votação onde o esforço rende mais em ${esc(tit(m.municipio))}</b><div class="tbl"><table><thead><tr><th>Local</th><th>Bairro</th><th class="n">Aptos</th><th class="n">% Lula</th><th class="n">Abst.</th><th>Território</th><th class="n">Mobilizar</th><th class="n">Persuadir</th><th class="n">Ganho</th></tr></thead><tbody>${L.map(l=>`<tr><td>${esc(tit(l[ci.local]))}</td><td>${esc(tit(l[ci.bairro]||""))}</td><td class="n">${fmt(l[ci.aptos])}</td><td class="n">${pc(l[ci.pct_lula])}</td><td class="n">${pc(l[ci.pct_abstencao])}</td><td><span class="tag ${String(l[ci.territorio]).includes("Lula")?"lula":String(l[ci.territorio]).includes("Flávio")?"flavio":""}">${esc(l[ci.territorio])}</span></td><td class="n">${fmt(l[ci.ganho_mobilizar])}</td><td class="n">${fmt(l[ci.ganho_persuadir])}</td><td class="n"><b>${fmt(l[ci.ganho_total])}</b></td></tr>`).join("")}</tbody></table></div><span class="small muted">Ganhos calculados com as premissas iniciais (não mudam com os controles acima).</span></div></td></tr>`;
+  return `<tr class="exp"><td colspan="12"><div style="display:grid;gap:6px"><b>Locais de votação onde o esforço rende mais em ${esc(tit(m.municipio))}</b><div class="tbl"><table><thead><tr><th>Local</th><th>Bairro</th><th class="n">Aptos</th><th class="n">% Lula</th><th class="n">Abst.</th><th>Território</th><th class="n">Mobilizar</th><th class="n">Persuadir</th><th class="n">Ganho</th></tr></thead><tbody>${L.map(l=>`<tr><td>${esc(tit(l[ci.local]))}</td><td>${esc(tit(l[ci.bairro]||""))}</td><td class="n">${fmt(l[ci.aptos])}</td><td class="n">${pc(l[ci.pct_lula])}</td><td class="n">${pc(l[ci.pct_abstencao])}</td><td><span class="tag ${String(l[ci.territorio]).includes("Lula")?"lula":String(l[ci.territorio]).includes("Flávio")?"flavio":""}">${esc(l[ci.territorio])}</span></td><td class="n">${fmt(l[ci.ganho_mobilizar])}</td><td class="n">${fmt(l[ci.ganho_persuadir])}</td><td class="n"><b>${fmt(l[ci.ganho_total])}</b></td></tr>`).join("")}</tbody></table></div><span class="small muted">Ganhos calculados com as hipóteses iniciais (não mudam com os controles acima).</span></div></td></tr>`;
 }
 
 function tudo(){ recalc(); renderAlavancas(); renderTerr(); renderUF(); renderMun(); }
