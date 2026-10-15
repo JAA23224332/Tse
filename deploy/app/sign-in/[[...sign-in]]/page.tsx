@@ -70,7 +70,7 @@ export default function Entrar() {
             <div className="head">
               <span className="eyebrow">Dados oficiais do TSE, município por município</span>
               <h1>O 2º turno, <i>lugar por lugar</i></h1>
-              <p className="sub">Resultado do 1º turno em cada estado, município e escola, simulador de cenários, mapa, apuração ao vivo e um analista que responde perguntas com os dados. Para a equipe que precisa decidir onde investir tempo e gente.</p>
+              <p className="sub">Resultado do 1º turno em cada estado, município e escola, simulador de cenários, mapa, apuração ao vivo e o Raio-X Eleitoral, agente de IA que responde perguntas com os dados. Para a equipe que precisa decidir onde investir tempo e gente.</p>
             </div>
 
             <div className="placar" aria-label="Resultado do 1º turno">
@@ -115,7 +115,7 @@ export default function Entrar() {
               </form>
             )}
             {erro && <p role="alert" className="erro">{erro}</p>}
-            <p className="acesso">O código chega em alguns segundos; confira também a caixa de spam. O acesso é restrito à equipe.</p>
+            <p className="acesso">O código chega em alguns segundos; confira também a caixa de spam. Quem entra fica registrado; o Raio-X Eleitoral exige aprovação da administração.</p>
           </div>
         </section>
 

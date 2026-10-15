@@ -8,7 +8,10 @@ export async function decidir(formData: FormData) {
   const admin = await emailAtual();
   if (!ehAdmin(admin)) throw new Error("Sem permissão.");
   const id = Number(formData.get("id"));
-  const decisao = formData.get("decisao") === "aprovar" ? "aprovada" : "recusada";
+  if (!Number.isInteger(id) || id <= 0) throw new Error("Pedido inválido.");
+  const d = formData.get("decisao");
+  if (d !== "aprovar" && d !== "recusar") throw new Error("Decisão inválida.");
+  const decisao = d === "aprovar" ? "aprovada" : "recusada";
   const motivo = String(formData.get("motivo") ?? "").trim().slice(0, 300) || null;
 
   const [s] = (await sql`

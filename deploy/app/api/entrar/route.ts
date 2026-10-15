@@ -1,12 +1,17 @@
 import { clerkClient } from "@clerk/nextjs/server";
+import { ipAddress } from "@vercel/functions";
+import { dentroDoLimite } from "@/lib/limite";
 
 // Garante que existe um cadastro (sem senha) para o e-mail, para o login por código funcionar
 // mesmo na primeira visita. Qualquer e-mail pode entrar no painel.
 export async function POST(req: Request) {
+  if (!(await dentroDoLimite(`entrar:${ipAddress(req) ?? "sem-ip"}`, 10))) {
+    return Response.json({ erro: "Muitas tentativas. Aguarde uma hora e tente de novo." }, { status: 429 });
+  }
   const { email } = (await req.json().catch(() => ({}))) as { email?: string };
   const e = String(email ?? "").trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) || e.length > 254) {
-    return Response.json({ erro: "Digite um e-mail válido." }, { status: 400 });
+  if (!/^[a-z0-9._%-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(e) || e.length > 254) {
+    return Response.json({ erro: "Digite um e-mail válido, sem o sinal de + no endereço." }, { status: 400 });
   }
   const clerk = await clerkClient();
   const { data } = await clerk.users.getUserList({ emailAddress: [e] });
