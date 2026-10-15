@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { auth } from "@clerk/nextjs/server";
@@ -29,11 +30,14 @@ export async function servirHtml(req: Request, arquivo: string, rota: string) {
     try {
       html = await readFile(path.join(process.cwd(), "private", arquivo), "utf8");
     } catch {
-      return new Response("Esta página ainda não foi gerada.", { status: 404 });
+      return Response.redirect(new URL("/nao-gerada", req.url));
     }
     cache.set(arquivo, html);
   }
-  return new Response(html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces"))), {
-    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-store" },
-  });
+  const corpo = html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces")));
+  // ETag por conteúdo+pessoa: o navegador guarda a página e só rebaixa quando ela muda (a auth roda sempre)
+  const etag = `"${createHash("sha1").update(corpo).digest("hex").slice(0, 20)}"`;
+  const cabecalhos = { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-cache", etag, vary: "Cookie" };
+  if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers: cabecalhos });
+  return new Response(corpo, { headers: cabecalhos });
 }

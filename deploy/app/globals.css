@@ -2,7 +2,7 @@
 
 :root{
   --bg:#0c1412;--surface:#121d1a;--surface-2:#1a2824;--surface-3:#23332e;--line:#243530;--line-2:#34483f;
-  --ink:#eef2ee;--ink-2:#aab7b0;--ink-3:#73847c;
+  --ink:#eef2ee;--ink-2:#aab7b0;--ink-3:#8a9a92;
   --lula:#e4322e;--lula-2:#ff6f69;--lula-dim:#4a1a18;--flavio:#2f5be8;--flavio-2:#86a2f7;--flavio-dim:#182a66;
   --neutral:#7d8b85;--ouro:#e9c46a;--verde:#5fd39a;--erro:#ff8a80;--focus:#e9c46a;
   --a:var(--flavio);--b:var(--lula);--bar-muted:#34483f;

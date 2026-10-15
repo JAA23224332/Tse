@@ -2,9 +2,15 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 import { emailAtual, ehAdmin } from "@/lib/admin";
 import { BarraNav } from "@/app/nav";
+import { NOME, DESCRICAO } from "@/lib/nav";
 import "./globals.css";
 
-export const metadata = { title: "Painel do 2º Turno 2026" };
+export const metadata = {
+  title: { default: NOME, template: `%s · ${NOME}` },
+  description: DESCRICAO,
+  robots: { index: false, follow: false },
+  openGraph: { title: NOME, description: DESCRICAO, locale: "pt_BR", type: "website" },
+};
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

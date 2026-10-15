@@ -335,7 +335,7 @@ function renderSim() {
   html += `<div class="srow">
     <div class="lbl"><b>Comparecimento</b><span class="num muted">abstenção no 1º turno: ${pc(100 * r.abst / r.eleit)}</span></div>
     <div class="pair">
-      <label for="dc_${r.id}">Variação (pontos do eleitorado) <span class="v">${p.dComp > 0 ? "+" : ""}${p.dComp.toLocaleString("pt-BR")} p.p. ≈ ${fmt(Math.abs(r.eleit * p.dComp / 100))} eleitores</span><input type="range" id="dc_${r.id}" min="-4" max="4" step="0.2" value="${p.dComp}"></label>
+      <label for="dc_${r.id}">Variação (pontos do eleitorado) <span class="v">${p.dComp > 0 ? "+" : ""}${p.dComp.toLocaleString("pt-BR")} pontos ≈ ${fmt(Math.abs(r.eleit * p.dComp / 100))} eleitores</span><input type="range" id="dc_${r.id}" min="-4" max="4" step="0.2" value="${p.dComp}"></label>
       <label for="nv_${r.id}">Dos novos votantes, para ${esc(r.A)} <span class="v">${p.novosA}%</span><input class="ra" type="range" id="nv_${r.id}" min="0" max="100" step="5" value="${p.novosA}" ${p.dComp > 0 ? "" : "disabled"}></label>
     </div>
     <span class="resto">Se o comparecimento cair, a perda sai dos dois na proporção dos votos de cada um.</span>
@@ -358,7 +358,7 @@ function renderSim() {
   const dc = $(`dc_${r.id}`), nv = $(`nv_${r.id}`);
   dc.oninput = () => {
     p.dComp = +dc.value; nv.disabled = p.dComp <= 0;
-    dc.previousElementSibling.textContent = `${p.dComp > 0 ? "+" : ""}${p.dComp.toLocaleString("pt-BR")} p.p. ≈ ${fmt(Math.abs(r.eleit * p.dComp / 100))} eleitores`;
+    dc.previousElementSibling.textContent = `${p.dComp > 0 ? "+" : ""}${p.dComp.toLocaleString("pt-BR")} pontos ≈ ${fmt(Math.abs(r.eleit * p.dComp / 100))} eleitores`;
     renderOut();
   };
   nv.oninput = () => { p.novosA = +nv.value; nv.previousElementSibling.textContent = p.novosA + "%"; renderOut(); };

@@ -148,7 +148,10 @@ function mensagemTexto(m: MensagemAnalista): string {
 }
 
 export function Chat() {
-  const { messages, sendMessage, status, error, stop } = useChat<MensagemAnalista>({
+  const CHAVE = "raiox_conversa";
+  const inicial = (() => { try { const b = sessionStorage.getItem(CHAVE); return b ? (JSON.parse(b) as MensagemAnalista[]) : []; } catch { return []; } })();
+  const { messages, sendMessage, status, error, stop, setMessages } = useChat<MensagemAnalista>({
+    id: "raiox", messages: inicial,
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
@@ -156,11 +159,31 @@ export function Chat() {
   const campo = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { fim.current?.scrollIntoView({ block: "end" }); }, [messages]);
   const ocupado = status === "submitted" || status === "streaming";
+  const toque = typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches;
+  // guarda a conversa nesta aba (sobrevive a trocar de página e voltar); tabelas grandes são encurtadas para caber
+  useEffect(() => {
+    if (ocupado) return;
+    try {
+      const leve = messages.map((m) => ({ ...m, parts: m.parts.map((p) => p.type === "tool-consultar_sql" && p.state === "output-available" && "linhas" in p.output && (p.output.linhas?.length ?? 0) > 50 ? { ...p, output: { ...p.output, linhas: (p.output.linhas ?? []).slice(0, 50) } } : p) }));
+      sessionStorage.setItem(CHAVE, JSON.stringify(leve));
+    } catch {}
+  }, [messages, ocupado]);
+  const novaConversa = () => { setMessages([]); try { sessionStorage.removeItem(CHAVE); } catch {} };
+  const erroTexto = (e: Error) => /fetch|network|load failed/i.test(e.message) ? "Sem conexão. Verifique a internet e tente de novo." : e.message;
   const [copiado, setCopiado] = useState<string | null>(null);
   const [relatorio, setRelatorio] = useState<string | null>(null);
   const quadro = useRef<HTMLIFrameElement>(null);
   /** Mostra o relatório sobre o chat (sem pop-up nem navegação: a conversa continua intacta). */
-  const abrirPdf = (selecao: MensagemAnalista[]) => setRelatorio(relatorioHtml(selecao as unknown as MensagemRelatorio[]));
+  const abrirPdf = (selecao: MensagemAnalista[]) => {
+    const html = relatorioHtml(selecao as unknown as MensagemRelatorio[]);
+    // iPhone/iPad: o Safari não imprime iframe; abre o relatório como página própria com o botão de imprimir dentro
+    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+      const url = URL.createObjectURL(new Blob([html.replace("</body>", '<p style="text-align:center;margin:24px 0"><button onclick="window.print()" style="font:600 15px system-ui;padding:12px 18px;border:0;border-radius:8px;background:#111;color:#fff">Imprimir ou salvar em PDF</button></p></body>')], { type: "text/html" }));
+      window.open(url, "_blank") || (window.location.href = url);
+      return;
+    }
+    setRelatorio(html);
+  };
   const salvarPdf = () => { const w = quadro.current?.contentWindow; if (w) { w.focus(); w.print(); } };
   useEffect(() => {
     if (!relatorio) return;
@@ -283,7 +306,7 @@ export function Chat() {
               </div>
             </div>
           ))}
-          {error && <p className="erro">Não foi possível responder: {error.message}</p>}
+          {error && <p className="erro">Não foi possível responder: {erroTexto(error)}</p>}
           {ocupado && <div className="turno a"><div className="marca" aria-hidden="true">IA</div><div className="pensando">Analisando <i /><i /><i /> <button type="button" className="parar" onClick={stop}>parar</button></div></div>}
           <div ref={fim} />
         </div>
@@ -292,10 +315,10 @@ export function Chat() {
           <form onSubmit={(e) => { e.preventDefault(); perguntar(input); }}>
             <textarea ref={campo} id="pergunta" rows={1} value={input} placeholder="Ex.: onde a abstenção mais custa votos para Lula na Bahia?" aria-label="Pergunta"
               onChange={(e) => { setInput(e.target.value); ajustar(e.target); }}
-              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); perguntar(input); } }} />
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !toque) { e.preventDefault(); perguntar(input); } }} />
             <button type="submit" className="enviar" aria-label="Perguntar" disabled={ocupado || !input.trim()}><svg viewBox="0 0 24 24"><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg></button>
           </form>
-          <p className="dica">Enter envia, Shift+Enter quebra a linha. As respostas vêm só dos dados do TSE carregados no banco.</p>
+          <p className="dica">{toque ? "Toque na seta para enviar." : "Enter envia, Shift+Enter quebra a linha."} As respostas vêm só dos dados oficiais do TSE. {messages.length > 0 && <button type="button" className="parar" onClick={novaConversa}>Nova conversa</button>}</p>
         </div>
       </section>
       <div style={{ gridColumn: "1 / -1" }}><Credito /></div>

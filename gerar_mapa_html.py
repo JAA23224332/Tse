@@ -263,16 +263,16 @@ const perc = v => { let lo=0, hi=GANHOS.length; while(lo<hi){const m=(lo+hi)>>1;
 const margem = cd => get(cd,"pct_lula")-get(cd,"pct_flavio");
 const ramp = (...cs) => `linear-gradient(90deg,${cs.join(",")})`;
 const MED = {
-  margem: {rot:"Margem (p.p.)", anos:true, val: cd => ano===2022 ? get(cd,"m22") : margem(cd), cor: v => passo(v,[10,25,45]), degraus:{lim:[10,25,45], rot:["até 10","25","45","mais pontos"]}, dom:[-50,50],
-    escola: l => passo(l[3]-l[4],[10,25,45]), txt: v => v==null?"sem dado":(v>=0?"Lula":"Flávio")+" "+pp(Math.abs(v))+" p.p."},
+  margem: {rot:"Margem (pontos)", anos:true, val: cd => ano===2022 ? get(cd,"m22") : margem(cd), cor: v => passo(v,[10,25,45]), degraus:{lim:[10,25,45], rot:["até 10","25","45","mais pontos"]}, dom:[-50,50],
+    escola: l => passo(l[3]-l[4],[10,25,45]), txt: v => v==null?"sem dado":(v>=0?"Lula":"Flávio")+" "+pp(Math.abs(v))+" pontos"},
   votos: {rot:"Margem em votos", val: cd => get(cd,"margem_lula"), cor: v => passo(v,[2000,20000,200000]), degraus:{lim:[2000,20000,200000], rot:["até 2 mil","20 mil","200 mil","mais votos"]}, dom:[-300000,300000],
     escola: l => passo((l[3]-l[4])/100*l[2],[50,200,800]), txt: v => (v>=0?"Lula":"Flávio")+" +"+fmt(Math.abs(v))+" votos"},
   ganho: {rot:"Votos a ganhar (Lula)", val: cd => get(cd,"ganho_total")||0, cor: v => seqO(perc(v)), ramp: ramp(BASE,OURO), ticks:["menos","por percentil","mais"], dom:[0,1], perc:true,
     escola: l => seqO(Math.min(1, l[6]/(l[2]*0.05))), txt: v => fmt(v)+" votos a ganhar"},
   abst: {rot:"Abstenção", val: cd => get(cd,"pct_abstencao"), cor: v => seqC((v-10)/25), ramp: ramp(BASE,CLARO), ticks:["10%","22,5%","35%"], dom:[10,35],
     escola: l => seqC((l[5]-10)/25), txt: v => pc(v)+" de abstenção"},
-  mudanca: {rot:"Mudança de Lula desde 2022 (p.p.)", val: cd => get(cd,"pct_lula_22t1")==null?null:get(cd,"pct_lula")-get(cd,"pct_lula_22t1"), cor: v => v==null?"#1a2824":v<0?mix(NEUTRO,"#ff6f69",-v/15):mix(NEUTRO,VERDE,v/15), ramp: ramp("#ff6f69",NEUTRO,VERDE), ticks:["caiu 15","igual","subiu 15"], dom:[-15,15],
-    escola: l => passo(l[3]-l[4],[10,25,45]), txt: v => v==null?"sem 2022":(v<0?"caiu ":"subiu ")+pp(Math.abs(v)).replace("+","")+" p.p."},
+  mudanca: {rot:"Mudança de Lula desde 2022 (pontos)", val: cd => get(cd,"pct_lula_22t1")==null?null:get(cd,"pct_lula")-get(cd,"pct_lula_22t1"), cor: v => v==null?"#1a2824":v<0?mix(NEUTRO,"#ff6f69",-v/15):mix(NEUTRO,VERDE,v/15), ramp: ramp("#ff6f69",NEUTRO,VERDE), ticks:["caiu 15","igual","subiu 15"], dom:[-15,15],
+    escola: l => passo(l[3]-l[4],[10,25,45]), txt: v => v==null?"sem 2022":(v<0?"caiu ":"subiu ")+pp(Math.abs(v)).replace("+","")+" pontos"},
   terr: {rot:"Território", val: cd => get(cd,"territorio"), cor: v => ({"Reduto de Lula":LULA,"Disputado":"#8a968f","Reduto de Flávio":FLAVIO})[v]||BASE, cat:[["Reduto de Lula",LULA],["Disputado","#8a968f"],["Reduto de Flávio",FLAVIO]],
     escola: l => passo(l[3]-l[4],[10,25,45]), txt: v => v},
 };
@@ -363,8 +363,8 @@ function detalhe(cd){
   $("det").innerHTML = `<button type="button" class="fechar" id="fechar">fechar</button><h3>${tit(g("municipio"))} <span class="muted" style="font-size:14px;font-family:var(--fb)">${g("uf")}${g("capital")===true||g("capital")==="True"?" · capital":""}</span></h3><span class="tag ${g("territorio").includes("Lula")?"lula":g("territorio").includes("Flávio")?"flavio":""}">${g("territorio")}</span>
     <div class="row"><span>Eleitorado</span><b>${fmt(g("eleitorado"))}</b></div>
     <div class="row"><span>Lula</span><b class="lula">${pc(g("pct_lula"))}</b></div><div class="row"><span>Flávio Bolsonaro</span><b class="flavio">${pc(g("pct_flavio"))}</b></div>
-    <div class="row"><span>Margem</span><b>${lider} +${fmt(Math.abs(marg))} (${pp(Math.abs(margem(cd)))} p.p.)</b></div>
-    <div class="row"><span>Margem em 2022 (1º t.)</span><b>${m22==null?"—":(m22>=0?"Lula":"Bolsonaro")+" "+pp(Math.abs(m22))+" p.p."}</b></div>
+    <div class="row"><span>Margem</span><b>${lider} +${fmt(Math.abs(marg))} (${pp(Math.abs(margem(cd)))} pontos)</b></div>
+    <div class="row"><span>Margem em 2022 (1º t.)</span><b>${m22==null?"—":(m22>=0?"Lula":"Bolsonaro")+" "+pp(Math.abs(m22))+" pontos"}</b></div>
     <div class="row"><span>Lula em 2022 (1º t.)</span><b>${pc(g("pct_lula_22t1"))}</b></div>
     <div class="row"><span>Abstenção</span><b>${pc(g("pct_abstencao"))}</b></div>
     <div class="row"><span>Votos de eliminados</span><b>${fmt(g("eliminados"))}</b></div>
@@ -379,7 +379,7 @@ function detalheEscola(l){
   $("det").innerHTML = `<button type="button" class="fechar" id="fechar">fechar</button><span class="eyebrow">Local de votação</span><h3 style="font-size:19px">${esc(nome)}</h3><span class="small muted">${esc(bairro)}${bairro?" · ":""}${esc(tit(D[Object.keys(D).find(k=>get(k,"cd_tse")===cd)||""]?.[ci.municipio]||""))}</span>
     <div class="row"><span>Eleitores aptos</span><b>${fmt(aptos)}</b></div>
     <div class="row"><span>Lula</span><b class="lula">${pc(pl)}</b></div><div class="row"><span>Flávio Bolsonaro</span><b class="flavio">${pc(pa)}</b></div>
-    <div class="row"><span>Margem</span><b>${m>=0?"Lula":"Flávio"} ${pp(Math.abs(m))} p.p.</b></div>
+    <div class="row"><span>Margem</span><b>${m>=0?"Lula":"Flávio"} ${pp(Math.abs(m))} pontos</b></div>
     <div class="row"><span>Abstenção</span><b>${pc(pab)}</b></div>
     <div class="row"><span>Votos a ganhar</span><b style="color:var(--ouro)">${fmt(ganho)}</b></div>`;
   $("fechar").onclick = () => { fixoEscola=null; $("det").hidden=true; escolas(); };

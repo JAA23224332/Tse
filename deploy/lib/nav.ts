@@ -1,3 +1,6 @@
+export const NOME = "2º Turno 2026";
+export const DESCRICAO = "Resultados oficiais do TSE por estado, município e escola, estratégia de campanha, mapa, apuração ao vivo e o Raio-X Eleitoral.";
+
 export const PAGINAS = [
   ["/", "Painel"],
   ["/estrategia", "Estratégia"],
@@ -24,6 +27,6 @@ export function navHtml(atual: string, email: string | null, admin: boolean, com
 #navig a:not(.marca):hover{color:#eef2ee}#navig a[aria-current=page]{color:#eef2ee;border-color:#e9c46a}
 #navig .r{margin-left:auto;display:flex;gap:4px;align-items:center;color:#73847c}#navig .r a{padding:16px 8px}
 #navig .ao{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e9c46a;margin-right:6px;vertical-align:1px}
-@media(max-width:700px){#navig .r span{display:none}}
+@media(max-width:700px){#navig{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:0;padding:0 12px}#navig::-webkit-scrollbar{display:none}#navig a{white-space:nowrap;flex:none}#navig .marca{margin-right:8px}#navig .r{margin-left:12px;flex:none}#navig .r span{display:none}}
 </style><nav id="navig" aria-label="Páginas"><a class="marca" href="/">2º Turno <i>2026</i></a>${links}<span class="r"><span>${(email ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!))}</span>${admin ? '<a href="/admin">Acessos</a>' : ""}<a href="/sair">Sair</a></span></nav>`;
 }
