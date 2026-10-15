@@ -1,13 +1,12 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ToolLoopAgent, tool, type InferAgentUIMessage } from "ai";
 import { z } from "zod";
-import { sql } from "@/lib/db";
+import { sql, sqlLeitura } from "@/lib/db";
 
-// "API Mãe": endpoint OpenAI-compatible (chat/completions). Em produção aponta direto para a H100 da SES-PI,
-// o mesmo upstream que o proxy LiteLLM local usa; se a API Mãe ganhar endereço público, basta trocar LLM_BASE_URL.
+// Serviço de IA compatível com a API chat/completions. Endereço, modelo e chave só por variáveis de ambiente.
 const apiMae = createOpenAICompatible({
-  name: "api-mae",
-  baseURL: process.env.LLM_BASE_URL ?? "https://suse.saude.pi.gov.br/v1",
+  name: "ia",
+  baseURL: process.env.LLM_BASE_URL ?? "http://localhost:0/nao-configurado",
   apiKey: process.env.LLM_API_KEY,
 });
 export const MODELO = process.env.LLM_MODEL ?? "qwen-main";
@@ -39,9 +38,15 @@ Tabela secoes (pode não existir ainda; uma linha por seção eleitoral, ~500 mi
   devem sempre filtrar por uf e, de preferência, cd_tse.
 `;
 
-const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|vacuum|pg_sleep|pg_read|lo_)\b/i;
+// Primeira barreira (a segunda é a role raiox_leitor, só-leitura e sem acesso às tabelas de pessoas).
+// Sem \b no fim dos prefixos: "_" conta como letra e \bpg_read\b nunca casaria pg_read_file.
+const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|vacuum|set_config|setval|nextval|pg_sleep|pg_read|pg_ls|pg_stat|pg_terminate|pg_cancel|pg_reload|lo_|dblink|current_setting|information_schema|pg_catalog|acessos|perguntas|solicitacoes|consultas|apuracao_snapshots)\w*/i;
 
-export const analista = new ToolLoopAgent({
+/** Contexto de quem pergunta, usado só para auditoria das consultas. */
+export type ContextoAnalista = { email: string | null; userId: string };
+
+export function criarAnalista(context: ContextoAnalista) {
+  return new ToolLoopAgent({
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
@@ -88,16 +93,22 @@ ${ESQUEMA}`,
         sql: z.string().describe("Consulta SELECT em PostgreSQL, sem ponto e vírgula."),
         motivo: z.string().describe("Em uma frase, o que a consulta responde."),
       }),
-      execute: async ({ sql: consulta }) => {
+      execute: async ({ sql: consulta, motivo }) => {
         const q = consulta.trim().replace(/;+\s*$/, "");
+        const registrar = (linhas: number | null, erro: string | null) =>
+          sql`insert into consultas (email, user_id, motivo, sql, linhas, erro) values (${context?.email ?? null}, ${context?.userId ?? null}, ${motivo}, ${q.slice(0, 4000)}, ${linhas}, ${erro})`.catch(() => {});
         if (!/^(select|with)\b/i.test(q) || q.includes(";") || PROIBIDO.test(q)) {
-          return { erro: "Só consultas SELECT são permitidas." };
+          registrar(null, "bloqueada pelo filtro");
+          return { erro: "Só consultas de leitura aos dados eleitorais são permitidas." };
         }
         try {
-          const linhas = (await sql.query(`select * from (${q}) consulta limit 200`)) as Record<string, unknown>[];
+          const [linhas] = (await sqlLeitura.transaction([sqlLeitura.query(`select * from (${q}) consulta limit 200`)], { readOnly: true })) as Record<string, unknown>[][];
+          registrar(linhas.length, null);
           return { linhas, total: linhas.length };
         } catch (e) {
-          return { erro: `Erro na consulta: ${(e as Error).message}` };
+          const msg = (e as Error).message;
+          registrar(null, msg.slice(0, 500));
+          return { erro: msg.includes("permission denied") ? "Esses dados não estão disponíveis para consulta." : msg.includes("statement timeout") ? "A consulta demorou demais; tente um recorte menor." : `Erro na consulta: ${msg}` };
         }
       },
     }),
@@ -120,5 +131,6 @@ ${ESQUEMA}`,
     }),
   },
 });
+}
 
-export type MensagemAnalista = InferAgentUIMessage<typeof analista>;
+export type MensagemAnalista = InferAgentUIMessage<ReturnType<typeof criarAnalista>>;

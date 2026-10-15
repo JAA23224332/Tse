@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { auth } from "@clerk/nextjs/server";
-import { geolocation, ipAddress } from "@vercel/functions";
+import { geolocation, ipAddress, waitUntil } from "@vercel/functions";
 import { emailAtual, ehAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
 import { navHtml } from "@/lib/nav";
@@ -22,7 +22,7 @@ export async function servirHtml(req: Request, arquivo: string, rota: string) {
   const { userId } = await auth();
   if (!userId) return Response.redirect(new URL("/sign-in", req.url));
   const email = await emailAtual();
-  await registrarAcesso(req, rota, userId, email);
+  waitUntil(registrarAcesso(req, rota, userId, email).catch((e) => console.error("acesso:", (e as Error).message)));
 
   let html = cache.get(arquivo);
   if (!html) {

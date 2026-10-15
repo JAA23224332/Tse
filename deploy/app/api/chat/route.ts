@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { createAgentUIStreamResponse } from "ai";
-import { analista } from "@/lib/analista";
+import { criarAnalista } from "@/lib/analista";
 import { perfilAtual, podeUsarAnalista } from "@/lib/acesso";
 import { sql } from "@/lib/db";
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   sql`insert into perguntas (email, user_id, pergunta) values (${email}, ${userId}, ${String(texto).slice(0, 2000)})`.catch(() => {});
 
   return createAgentUIStreamResponse({
-    agent: analista,
+    agent: criarAnalista({ email, userId }),
     uiMessages: messages,
     // mensagens ao usuário sem detalhes técnicos (o motivo real vai só para o log do servidor)
     onError: (e) => {
