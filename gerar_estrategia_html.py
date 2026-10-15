@@ -55,7 +55,7 @@ __BASE__
 .deficit span{color:var(--ink-2);font-size:13px;max-width:26ch}
 
 /* seletores com opções longas não podem alargar a página no celular */
-select{max-width:100%;min-width:0}.filters select{flex:0 1 auto;max-width:100%}
+select{max-width:100%;min-width:0}.filters{min-width:0}.filters select{flex:0 1 auto;min-width:0;max-width:100%}
 </style>
 </head>
 <body>
