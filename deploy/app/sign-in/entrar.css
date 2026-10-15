@@ -1,0 +1,66 @@
+/* Página de entrada: apresentação pública do painel + login. */
+.lp{min-height:100vh;display:grid;grid-template-rows:auto 1fr auto}
+.lp .faixa{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 24px;max-width:1200px;width:100%;margin:0 auto}
+.lp .faixa .marca{font-family:var(--fd);font-size:18px;font-weight:500;font-variant-numeric:lining-nums;letter-spacing:-.01em;color:var(--ink);text-decoration:none}
+.lp .faixa .marca i{font-style:italic;color:var(--ouro)}
+.lp .faixa .data{font-size:13px;color:var(--ink-3)}
+.lp .faixa .data b{color:var(--ink-2);font-weight:600}
+
+.lp .miolo{max-width:1200px;width:100%;margin:0 auto;padding:24px 24px 56px;display:grid;gap:64px}
+.lp .hero{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:56px;align-items:start}
+@media(max-width:900px){.lp .hero{grid-template-columns:1fr;gap:32px}}
+.lp .apres{display:grid;gap:26px}
+.lp .apres h1{font-size:clamp(40px,6vw,76px);line-height:.98}
+.lp .apres h1 i{font-style:italic;color:var(--ouro);font-variation-settings:"opsz" 144,"SOFT" 100,"WONK" 1}
+.lp .apres .sub{font-size:17px;line-height:1.5;color:var(--ink-2);max-width:56ch}
+
+/* placar do 1º turno */
+.lp .placar{display:grid;gap:12px;max-width:620px}
+.lp .placar .linha{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:end}
+.lp .cand{display:grid;gap:4px}.lp .cand.r{justify-items:end;text-align:right}
+.lp .cand .quem{display:flex;align-items:center;gap:10px;font-size:14px}.lp .cand.r .quem{flex-direction:row-reverse}
+.lp .cand .tecla{font-size:20px}.lp .cand .quem b{font-weight:600}.lp .cand .quem small{color:var(--ink-3)}
+.lp .cand .pct{font-family:var(--fd);font-weight:500;font-size:clamp(40px,5.5vw,64px);line-height:1;letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums;font-variation-settings:"opsz" 144,"SOFT" 20}
+.lp .cand.flavio .pct{color:var(--flavio-2)}.lp .cand.lula .pct{color:var(--lula-2)}
+.lp .cand .v{font-size:12.5px;color:var(--ink-2)}
+.lp .dif{display:grid;justify-items:center;text-align:center;gap:2px;font-size:12px;color:var(--ink-2);padding-bottom:10px}
+.lp .dif b{font-family:var(--fd);font-weight:500;font-size:22px;color:var(--ink);font-variant-numeric:lining-nums tabular-nums;letter-spacing:-.02em}
+.lp .placar .split{height:9px}
+.lp .placar .fonte{font-size:12px;color:var(--ink-3)}
+@media(max-width:560px){.lp .placar .linha{grid-template-columns:1fr;gap:14px}.lp .cand.r{justify-items:start;text-align:left}.lp .cand.r .quem{flex-direction:row}.lp .dif{justify-items:start;text-align:left;padding:0;border-left:2px solid var(--line-2);padding-left:10px}}
+.lp .hero>*,.lp .apres>*,.lp .miolo>*{min-width:0}
+
+/* cartão de login */
+.lp .login{display:grid;gap:18px;padding:28px;position:sticky;top:20px}
+.lp .login h2{font-size:26px}
+.lp .login form{display:grid;gap:12px}
+.lp .login label{font-size:13px;font-weight:600}
+.lp .login input{font-size:16px;padding:11px 12px;width:100%;border:1px solid var(--line-2);border-radius:var(--r);background:var(--surface-2);color:var(--ink)}
+.lp .login input.cod{font-family:var(--fd);font-size:30px;letter-spacing:.35em;text-align:center;font-variant-numeric:lining-nums tabular-nums;padding:8px 0 8px .35em}
+.lp .login .ok{font-size:15px;padding:12px}
+.lp .login .link{font:inherit;font-size:13px;background:none;border:0;color:var(--ink-2);text-decoration:underline;cursor:pointer;padding:0;justify-self:start}
+.lp .login .erro{color:var(--erro);font-size:14px}
+.lp .login .acesso{font-size:12.5px;color:var(--ink-3);line-height:1.45}
+
+/* Brasil em azulejos + leitura */
+.lp .brasil{display:grid;grid-template-columns:auto minmax(0,1fr);gap:48px;align-items:center}
+@media(max-width:900px){.lp .brasil{grid-template-columns:1fr;gap:24px}}
+.lp .brasil .leitura{display:grid;gap:14px;max-width:52ch}
+.lp .brasil .leitura h2{font-size:clamp(26px,3.4vw,38px)}
+.lp .brasil .leitura p{color:var(--ink-2);font-size:16px;line-height:1.55}
+.lp .brasil .leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-3)}
+.lp .brasil .leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lp .brasil .leg i.pt{background:var(--ouro);border-radius:50%}
+.lp .azulejos{max-width:360px}
+.lp .azulejos .az{cursor:default}.lp .azulejos .az:hover{outline:none}
+
+/* o que há dentro */
+.lp .dentro{display:grid;gap:18px}
+.lp .dentro h2{font-size:clamp(26px,3.4vw,38px)}
+.lp .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.lp .item{display:grid;gap:8px;align-content:start;padding:18px;background:var(--surface);border-radius:var(--rp)}
+.lp .item .n{font-family:var(--fd);font-size:30px;font-weight:400;line-height:1;color:var(--ouro);font-variant-numeric:lining-nums;font-variation-settings:"opsz" 144}
+.lp .item h3{font-size:17px}
+.lp .item p{font-size:14px;color:var(--ink-2);line-height:1.5}
+
+.lp .rodape{max-width:1200px;width:100%;margin:0 auto;padding:0 24px 28px}

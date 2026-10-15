@@ -1,0 +1,23 @@
+# dados brutos e tratados (grandes; regeráveis com ./atualizar.sh)
+dados/brutos/
+dados/tratados/*.parquet
+dados/tratados/*.csv
+dados/tratados/*.xlsx
+dados/tratados/*.json
+# app
+deploy/node_modules/
+deploy/.next/
+deploy/.vercel/
+deploy/.env*
+deploy/.agents/
+deploy/.claude/
+deploy/skills-lock.json
+deploy/tsconfig.tsbuildinfo
+deploy/next-env.d.ts
+# páginas geradas (regeráveis)
+deploy/private/*.html
+deploy/private/locais/
+painel/*.html
+!painel/painel_template.html
+__pycache__/
+*.pyc
