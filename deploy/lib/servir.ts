@@ -38,6 +38,7 @@ export async function servirHtml(req: Request, arquivo: string, rota: string) {
   // ETag por conteúdo+pessoa: o navegador guarda a página e só rebaixa quando ela muda (a auth roda sempre)
   const etag = `"${createHash("sha1").update(corpo).digest("hex").slice(0, 20)}"`;
   const cabecalhos = { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-cache", etag, vary: "Cookie" };
-  if (req.headers.get("if-none-match") === etag) return new Response(null, { status: 304, headers: cabecalhos });
+  const recebida = (req.headers.get("if-none-match") ?? "").split(",").map((t) => t.trim().replace(/^W\//, ""));
+  if (recebida.includes(etag)) return new Response(null, { status: 304, headers: cabecalhos });
   return new Response(corpo, { headers: cabecalhos });
 }

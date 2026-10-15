@@ -149,9 +149,8 @@ function mensagemTexto(m: MensagemAnalista): string {
 
 export function Chat() {
   const CHAVE = "raiox_conversa";
-  const inicial = (() => { try { const b = sessionStorage.getItem(CHAVE); return b ? (JSON.parse(b) as MensagemAnalista[]) : []; } catch { return []; } })();
   const { messages, sendMessage, status, error, stop, setMessages } = useChat<MensagemAnalista>({
-    id: "raiox", messages: inicial,
+    id: "raiox",
     transport: new DefaultChatTransport({ api: "/api/chat" }),
   });
   const [input, setInput] = useState("");
@@ -159,15 +158,22 @@ export function Chat() {
   const campo = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { fim.current?.scrollIntoView({ block: "end" }); }, [messages]);
   const ocupado = status === "submitted" || status === "streaming";
-  const toque = typeof window !== "undefined" && matchMedia("(pointer: coarse)").matches;
-  // guarda a conversa nesta aba (sobrevive a trocar de página e voltar); tabelas grandes são encurtadas para caber
+  const [toque, setToque] = useState(false);
+  const [restaurado, setRestaurado] = useState(false);
+  // depois de montar: detecta toque e restaura a conversa guardada nesta aba (sobrevive a trocar de página e voltar)
   useEffect(() => {
-    if (ocupado) return;
+    setToque(matchMedia("(pointer: coarse)").matches);
+    try { const b = sessionStorage.getItem(CHAVE); if (b) setMessages(JSON.parse(b) as MensagemAnalista[]); } catch {}
+    setRestaurado(true);
+  }, [setMessages]);
+  // guarda a conversa; tabelas grandes são encurtadas para caber
+  useEffect(() => {
+    if (ocupado || !restaurado) return;
     try {
       const leve = messages.map((m) => ({ ...m, parts: m.parts.map((p) => p.type === "tool-consultar_sql" && p.state === "output-available" && "linhas" in p.output && (p.output.linhas?.length ?? 0) > 50 ? { ...p, output: { ...p.output, linhas: (p.output.linhas ?? []).slice(0, 50) } } : p) }));
       sessionStorage.setItem(CHAVE, JSON.stringify(leve));
     } catch {}
-  }, [messages, ocupado]);
+  }, [messages, ocupado, restaurado]);
   const novaConversa = () => { setMessages([]); try { sessionStorage.removeItem(CHAVE); } catch {} };
   const erroTexto = (e: Error) => /fetch|network|load failed/i.test(e.message) ? "Sem conexão. Verifique a internet e tente de novo." : e.message;
   const [copiado, setCopiado] = useState<string | null>(null);

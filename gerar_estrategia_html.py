@@ -53,6 +53,9 @@ __BASE__
 .capa{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 48px;align-items:start}@media(max-width:900px){.capa{grid-template-columns:1fr}}
 .deficit{display:grid;gap:4px;justify-items:end;text-align:right}.deficit b{font-family:var(--fd);font-weight:500;font-size:clamp(40px,6vw,72px);line-height:1;letter-spacing:-.02em;color:var(--flavio-2);font-variant-numeric:lining-nums tabular-nums;font-variation-settings:"opsz" 144}
 .deficit span{color:var(--ink-2);font-size:13px;max-width:26ch}
+
+/* seletores com opções longas não podem alargar a página no celular */
+select{max-width:100%;min-width:0}.filters select{flex:0 1 auto;max-width:100%}
 </style>
 </head>
 <body>
