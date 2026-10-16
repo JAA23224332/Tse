@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// O painel é aberto. Só o Raio-X Eleitoral (chat), o pedido de acesso e a administração exigem login.
-const protegida = createRouteMatcher(["/analista(.*)", "/api/chat(.*)", "/api/solicitar", "/admin(.*)", "/sair"]);
+// O painel é aberto, inclusive a vitrine do Raio-X e o pedido de acesso. Só o chat em si e a administração exigem login.
+const protegida = createRouteMatcher(["/api/chat(.*)", "/admin(.*)", "/sair"]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (protegida(req)) await auth.protect();

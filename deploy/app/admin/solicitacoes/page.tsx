@@ -3,6 +3,7 @@ import { sql } from "@/lib/db";
 import { Credito } from "@/app/credito";
 import { SemAcesso } from "@/app/admin/semacesso";
 import { decidir } from "./acoes";
+import { LinkBotao } from "./linkbotao";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Solicitações de acesso" };
@@ -33,6 +34,7 @@ function Cartao({ s }: { s: Sol }) {
       </div>
       {s.finalidade && <p className="small" style={{ margin: 0 }}><span className="muted">Finalidade:</span> {s.finalidade}</p>}
       {s.motivo && <p className="small" style={{ margin: 0 }}><span className="muted">Motivo:</span> {s.motivo}</p>}
+      {s.status === "aprovada" && <LinkBotao email={s.email} whatsapp={s.whatsapp} />}
       <form action={decidir} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <input type="hidden" name="id" value={s.id} />
         {s.status !== "aprovada" && <button className="btn primary" type="submit" name="decisao" value="aprovar">Aprovar</button>}
@@ -61,7 +63,7 @@ export default async function Solicitacoes() {
       <header className="head">
         <span className="eyebrow">Raio-X Eleitoral · quem pode usar</span>
         <h1>Solicitações de acesso</h1>
-        <p className="muted">Envie o link <b style={{ fontFamily: "var(--fm)", fontWeight: 500 }}>{link}</b> para quem precisa do Raio-X Eleitoral. Aprovar libera o chat para o e-mail informado e avisa a pessoa por e-mail.</p>
+        <p className="muted">Envie o link <b style={{ fontFamily: "var(--fm)", fontWeight: 500 }}>{link}</b> para quem precisa do Raio-X Eleitoral. Aprovar libera o chat para o e-mail informado; depois, gere o link de acesso e mande pelo WhatsApp (o e-mail de aviso pode não chegar).</p>
         <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin" style={{ color: "var(--ink)" }}>Acessos</a><a href="/analista" style={{ color: "var(--ink)" }}>Raio-X Eleitoral</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Link de acesso</a></nav>
       </header>
       <div className="stats">

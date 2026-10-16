@@ -3,13 +3,33 @@ import { acessoAnalista } from "@/lib/acesso";
 import { Credito } from "@/app/credito";
 import { Chat } from "./chat";
 import { Aguardando } from "./aguardando";
+import { Vitrine } from "./vitrine";
+
+function SemLogin() {
+  return (
+    <main className="wrap" style={{ maxWidth: 820, gap: 22 }}>
+      <header className="head">
+        <span className="eyebrow">Raio-X Eleitoral · agente de IA sobre os dados oficiais do TSE</span>
+        <h1>Pergunte aos dados da eleição</h1>
+        <p className="muted">Em português, resposta em segundos com números, tabela e PDF. Para conversar com o Raio-X é preciso entrar; o resto do painel é aberto.</p>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <a className="btn primary" href="/solicitar" style={{ textDecoration: "none" }}>Pedir acesso</a>
+          <a className="btn" href="/sign-in" style={{ textDecoration: "none" }}>Já tenho acesso: entrar</a>
+        </div>
+      </header>
+      <div className="an"><Vitrine /></div>
+      <Credito />
+    </main>
+  );
+}
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Raio-X Eleitoral" };
 
 export default async function Analista() {
-  const { userId } = await auth();
-  const a = await acessoAnalista(userId!);
+  const { userId } = await auth().catch(() => ({ userId: null as string | null }));
+  if (!userId) return <SemLogin />;
+  const a = await acessoAnalista(userId);
   if (a.perfil === "recusado") {
     return (
       <main className="wrap" style={{ maxWidth: 640, gap: 20 }}>

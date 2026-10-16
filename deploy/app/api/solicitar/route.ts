@@ -9,13 +9,15 @@ const UFS = "AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR R
 const limpo = (v: unknown, max: number) => String(v ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, max);
 
 export async function POST(req: Request) {
-  const { userId } = await auth();
-  const emailSessao = await emailAtual();
-  if (!userId || !emailSessao) return Response.json({ erro: "Entre com seu e-mail antes de pedir acesso." }, { status: 401 });
-  if (!(await dentroDoLimite(`solicitar:${ipAddress(req) ?? userId}`, 3))) return Response.json({ erro: "Muitos pedidos. Tente de novo mais tarde." }, { status: 429 });
+  const { userId } = await auth().catch(() => ({ userId: null as string | null }));
+  const emailSessao = userId ? await emailAtual().catch(() => null) : null;
+  if (!(await dentroDoLimite(`solicitar:${ipAddress(req) ?? "sem-ip"}`, 5))) return Response.json({ erro: "Muitos pedidos. Tente de novo mais tarde." }, { status: 429 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const emailDigitado = limpo(b.email, 254).toLowerCase();
+  const email = emailSessao ?? emailDigitado;  // pedido aberto: quem não está logado informa o e-mail
+  if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) return Response.json({ erro: "Informe um e-mail válido." }, { status: 400 });
   const s = {
-    nome: limpo(b.nome, 120), email: emailSessao, organizacao: limpo(b.organizacao, 120),  // o e-mail é o da conta logada, não o digitado
+    nome: limpo(b.nome, 120), email, organizacao: limpo(b.organizacao, 120),
     cargo: limpo(b.cargo, 120) || null, cidade: limpo(b.cidade, 80) || null, uf: limpo(b.uf, 2).toUpperCase() || null,
     whatsapp: limpo(b.whatsapp, 30) || null, finalidade: limpo(b.finalidade, 600) || null, indicacao: limpo(b.indicacao, 120) || null,
     aceite: true,  // enviar o formulário é o aceite; o texto está ao lado do botão
@@ -26,9 +28,8 @@ export async function POST(req: Request) {
   if (!s.finalidade || s.finalidade.length < 10) return Response.json({ erro: "Conte em uma frase por que quer acessar." }, { status: 400 });
 
   const [existente] = (await sql`select status from solicitacoes where lower(email) = ${s.email} order by criado_em desc limit 1`) as { status: string }[];
-  // é a própria pessoa logada, então pode saber o estado do seu pedido
-  if (existente?.status === "aprovada") return Response.json({ ok: true, estado: "aprovada" });
-  if (existente?.status === "pendente") return Response.json({ ok: true, estado: "pendente" });
+  // pedido repetido não cria linha nova; a resposta não revela o estado para quem não está logado
+  if (existente?.status === "aprovada" || existente?.status === "pendente") return Response.json({ ok: true, estado: emailSessao ? existente.status : "nova" });
 
   await sql`insert into solicitacoes (nome, email, user_id, organizacao, cargo, cidade, uf, whatsapp, finalidade, indicacao, aceite)
             values (${s.nome}, ${s.email}, ${userId}, ${s.organizacao}, ${s.cargo}, ${s.cidade}, ${s.uf}, ${s.whatsapp}, ${s.finalidade}, ${s.indicacao}, true)`;
