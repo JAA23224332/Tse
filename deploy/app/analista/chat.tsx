@@ -299,7 +299,10 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
               <div className="corpo">
                 {m.parts.map((p, i) => {
                   switch (p.type) {
-                    case "text": return <Texto key={i} t={p.text} />;
+                    case "text": {
+                      const anterior = m.parts.slice(0, i).find((q) => q.type === "text" && q.text.trim() === p.text.trim());
+                      return anterior ? null : <Texto key={i} t={p.text} />;
+                    }
                     case "tool-consultar_sql": {
                       const pronto = p.state === "output-available";
                       return (

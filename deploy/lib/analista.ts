@@ -1,5 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
-import { ToolLoopAgent, tool, type InferAgentUIMessage } from "ai";
+import { ToolLoopAgent, hasToolCall, stepCountIs, tool, type InferAgentUIMessage } from "ai";
 import { z } from "zod";
 import { sql, sqlLeitura } from "@/lib/db";
 
@@ -48,6 +48,8 @@ export type ContextoAnalista = { email: string | null; userId: string };
 
 export function criarAnalista(context: ContextoAnalista) {
   return new ToolLoopAgent({
+    // a chamada de proximas_perguntas encerra a resposta: evita o modelo repetir o texto depois dela
+    stopWhen: [stepCountIs(20), hasToolCall("proximas_perguntas")],
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
