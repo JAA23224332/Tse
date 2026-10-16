@@ -40,7 +40,7 @@ export default async function Admin() {
       <header className="head">
         <span className="eyebrow">Quem abriu o painel e quando</span>
         <h1>Acessos</h1>
-        <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin/solicitacoes" style={{ color: "var(--ink)" }}>Solicitações de acesso ao Raio-X Eleitoral</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Gerar link de acesso (código não chegou)</a></nav>
+        <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin/solicitacoes" style={{ color: "var(--ink)" }}>Solicitações de acesso ao Raio-X Eleitoral</a><a href="/admin/codigos" style={{ color: "var(--ink)" }}>Códigos de acesso ao Raio-X</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Link de acesso</a></nav>
       </header>
 
       <div className="stats">

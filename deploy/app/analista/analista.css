@@ -125,3 +125,4 @@
 .wrap > section, .wrap > header, .wrap .an { min-width: 0; max-width: 100%; }
 .an .exemplo { min-width: 0; }
 .an .exemplo .tbl { overflow-x: auto; max-width: 100%; }
+.an .pedido.codigo{border-color:var(--line-2);margin-bottom:16px}.an .pedido.codigo .pedido-campos{grid-template-columns:1fr 1fr 160px}@media(max-width:760px){.an .pedido.codigo .pedido-campos{grid-template-columns:1fr}}

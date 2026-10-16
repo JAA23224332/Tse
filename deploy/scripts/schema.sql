@@ -12,3 +12,4 @@ create table if not exists limites (chave text not null, janela timestamptz not 
 -- create role raiox_leitor login password '...'; grant usage on schema public to raiox_leitor;
 -- grant select on municipios, ufs, locais_votacao, secoes, candidatos to raiox_leitor;
 -- alter role raiox_leitor set statement_timeout = '15s'; alter role raiox_leitor set default_transaction_read_only = on;
+create table if not exists codigos_acesso (codigo text primary key, nota text, usos_max int not null default 1, usos int not null default 0, expira_em timestamptz not null, criado_por text, criado_em timestamptz not null default now(), revogado boolean not null default false);

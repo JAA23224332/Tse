@@ -4,6 +4,7 @@ import { Credito } from "@/app/credito";
 import { Chat } from "./chat";
 import { Aguardando } from "./aguardando";
 import { Vitrine } from "./vitrine";
+import { EntrarComCodigo } from "./codigo";
 
 function SemLogin() {
   return (
@@ -17,6 +18,7 @@ function SemLogin() {
           <a className="btn" href="/sign-in" style={{ textDecoration: "none" }}>Já tenho acesso: entrar</a>
         </div>
       </header>
+      <div className="an"><EntrarComCodigo /></div>
       <div className="an"><Vitrine /></div>
       <Credito />
     </main>
