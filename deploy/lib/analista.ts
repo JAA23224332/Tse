@@ -9,7 +9,8 @@ const apiMae = createOpenAICompatible({
   baseURL: process.env.LLM_BASE_URL ?? "http://localhost:0/nao-configurado",
   apiKey: process.env.LLM_API_KEY,
 });
-export const MODELO = process.env.LLM_MODEL ?? "qwen-main";
+export const MODELO = process.env.LLM_MODEL ?? "padrao";
+if (process.env.LLM_BASE_URL && !process.env.LLM_BASE_URL.startsWith("https://")) throw new Error("LLM_BASE_URL precisa ser https");
 
 const ESQUEMA = `
 Tabela municipios (uma linha por município, 5.570 + exterior como uf 'ZZ'):
@@ -41,7 +42,7 @@ Tabela secoes (pode não existir ainda; uma linha por seção eleitoral, ~500 mi
 
 // Primeira barreira (a segunda é a role raiox_leitor, só-leitura e sem acesso às tabelas de pessoas).
 // Sem \b no fim dos prefixos: "_" conta como letra e \bpg_read\b nunca casaria pg_read_file.
-const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|vacuum|set_config|setval|nextval|pg_sleep|pg_read|pg_ls|pg_stat|pg_terminate|pg_cancel|pg_reload|lo_|dblink|current_setting|information_schema|pg_catalog|acessos|perguntas|solicitacoes|consultas|apuracao_snapshots)\w*/i;
+const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|vacuum|set_config|setval|nextval|dblink|current_setting|current_user|session_user|current_database|current_schema|version|inet_server_addr|inet_client_addr|information_schema|acessos|perguntas|solicitacoes|consultas|apuracao_snapshots|limites)\b|\b(pg_|lo_)\w*/i;
 
 /** Contexto de quem pergunta, usado só para auditoria das consultas. */
 export type ContextoAnalista = { email: string | null; userId: string };

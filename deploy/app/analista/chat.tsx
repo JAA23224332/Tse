@@ -240,7 +240,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
               <button type="button" className="btn primary" onClick={salvarPdf}>Salvar como PDF</button>
             </div>
           </div>
-          <iframe ref={quadro} title="Relatório" srcDoc={relatorio} className="relatorio-quadro" />
+          <iframe ref={quadro} title="Relatório" srcDoc={relatorio} sandbox="allow-same-origin allow-modals" className="relatorio-quadro" />
         </div>
       )}
       <aside className="trilho" aria-label="Sugestões">

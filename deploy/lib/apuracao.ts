@@ -147,6 +147,14 @@ export function projetar(lidas: Lida[]): { ufs: ParcialUF[]; projLula: number | 
   return { ufs, projLula, projFlavio, faixa: Math.round(faixa * 10) / 10 };
 }
 
+/** Contado nacional direto do arquivo oficial do Brasil (uma requisição), para conferir snapshots recebidos. */
+export async function contadoNacional(ciclo: string, eleicao: number, numLula: string, numFlavio: string) {
+  const cod = String(eleicao).padStart(6, "0");
+  const p = (await json(`${TSE}/${ciclo}/${eleicao}/dados/br/br-c0001-e${cod}-u.json`)) as Parcial;
+  const { lula, flavio } = votos(p, numLula, numFlavio, eleicao);
+  return { lula, flavio, secoes: n(p.s?.st), secoesTot: n(p.s?.ts) };
+}
+
 export async function apurar(ciclo: string, eleicao: number, cargo: number, numLula: string, numFlavio: string, anterior?: Apuracao | null): Promise<Apuracao> {
   const base = await carregarBase();
   const cod = String(eleicao).padStart(6, "0"), c = String(cargo).padStart(4, "0");

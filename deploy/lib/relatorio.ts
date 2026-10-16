@@ -60,7 +60,7 @@ function parteHtml(p: Parte): string {
     const q = p as Extract<Parte, { type: "tool-consultar_sql" }>;
     if (q.state !== "output-available" || !q.output || q.output.erro || !q.output.linhas?.length) return "";
     const cols = Object.keys(q.output.linhas[0]);
-    return `<details class="consulta"><summary>Dados consultados${q.input?.motivo ? `: ${esc(q.input.motivo)}` : ""} (${q.output.linhas.length} linhas)</summary>
+    return `<details class="consulta" open><summary>Dados consultados${q.input?.motivo ? `: ${esc(q.input.motivo)}` : ""} (${q.output.linhas.length} linhas)</summary>
 <table><thead><tr>${cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${q.output.linhas.slice(0, 60).map((r) => `<tr>${cols.map((c) => `<td class="${typeof r[c] === "number" ? "n" : ""}">${esc(fmt(r[c]))}</td>`).join("")}</tr>`).join("")}</tbody></table>
 ${q.output.linhas.length > 60 ? `<p class="nota">Mostrando 60 de ${q.output.linhas.length} linhas.</p>` : ""}</details>`;
   }
@@ -117,6 +117,5 @@ footer{margin-top:28px;border-top:1px solid #ccc;padding-top:8px;font:8.5pt syst
 <header><div><h1>${esc(titulo)}</h1><div class="sub">Agente de IA sobre os dados oficiais do TSE · Painel do 2º Turno 2026</div></div><div class="sub">${esc(agora)}</div></header>
 ${blocos.join("\n")}
 <footer><span>Fontes: TSE (resultados do 1º turno de 2026 por seção e município, resultados de 2022, perfil do eleitorado, locais de votação). Estimativas de "votos a ganhar" dependem de premissas.</span><span>segundoturno.blog</span></footer>
-<script>document.querySelectorAll("details").forEach(d=>d.open=true);</script>
 </body></html>`;
 }

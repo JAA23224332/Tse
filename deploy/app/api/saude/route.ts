@@ -12,5 +12,5 @@ export async function GET() {
   const neon = await sql`select max(criado_em) as ultimo, count(*)::int as snapshots from apuracao_snapshots where eleicao = ${SEGUNDO_TURNO}`
     .then((r) => ({ ok: true, ms: Date.now() - t1, ultimo_snapshot: r[0].ultimo, snapshots: r[0].snapshots })).catch((e) => ({ ok: false, ms: Date.now() - t1, erro: (e as Error).message }));
   const ok = tse.ok && neon.ok;
-  return Response.json({ ok, tse, neon, coletor_token: !!process.env.COLETOR_TOKEN, agora: new Date().toISOString() }, { status: ok ? 200 : 503 });
+  return Response.json({ ok, tse, neon, coletor_token: !!process.env.COLETOR_TOKEN, agora: new Date().toISOString() }, { status: ok ? 200 : 503, headers: { "cache-control": "public, s-maxage=30" } });
 }

@@ -24,6 +24,8 @@ export async function GET(req: Request) {
   if (!UF.test(uf)) return Response.json({ erro: "Informe a UF." }, { status: 400 });
   if (mun && !/^\d{5}$/.test(mun)) return Response.json({ erro: "Código de município inválido." }, { status: 400 });
   if (!mun && !q && !(zona && secao)) return Response.json({ erro: "Escolha um município, ou zona e seção, ou um texto para buscar." }, { status: 400 });
+  if (csv && !mun && !(zona && secao)) return Response.json({ erro: "Para baixar o CSV, escolha um município ou uma zona e seção." }, { status: 400 });
+  if (csv && !(await dentroDoLimite(`secoes-csv:${userId}`, 8))) return Response.json({ erro: "Muitos downloads em pouco tempo. Aguarde uma hora." }, { status: 429 });
   if (q && q.length < 4 && !mun) return Response.json({ erro: "Para buscar por texto em todo o estado, digite pelo menos 4 letras ou escolha um município." }, { status: 400 });
 
   const cond: string[] = ["uf = $1"];
@@ -52,7 +54,7 @@ export async function GET(req: Request) {
       const esc = (v: unknown) => { const s = v == null ? "" : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
       const corpo = [cols.map(nomeCol).join(";"), ...linhas.map((l) => cols.map((c) => esc(l[c])).join(";"))].join("\n");
       const nome = `secoes_${uf}${mun ? "_" + mun : ""}${zona ? "_z" + zona : ""}${secao ? "_s" + secao : ""}.csv`;
-      return new Response("﻿" + corpo, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${nome}"` } });
+      return new Response("﻿" + corpo, { headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": `attachment; filename="${nome}"`, "cache-control": "private, max-age=86400" } });
     }
     return Response.json({ linhas, totais: tot[0], candidatos, truncado, limite });
   } catch (e) {

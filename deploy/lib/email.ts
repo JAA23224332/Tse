@@ -4,7 +4,7 @@ const SITE = process.env.SITE_URL ?? "https://segundoturno.blog";
 
 export async function enviarEmail(para: string | string[], assunto: string, html: string) {
   if (!process.env.RESEND_API_KEY) {
-    console.warn("email não enviado (RESEND_API_KEY ausente):", assunto, para);
+    console.warn("email não enviado (RESEND_API_KEY ausente):", assunto.slice(0, 30));
     return { ok: false, motivo: "sem chave" };
   }
   const r = await fetch("https://api.resend.com/emails", {
@@ -12,7 +12,7 @@ export async function enviarEmail(para: string | string[], assunto: string, html
     headers: { authorization: `Bearer ${process.env.RESEND_API_KEY}`, "content-type": "application/json" },
     body: JSON.stringify({ from: DE, to: para, subject: assunto, html }),
   });
-  if (!r.ok) console.error("resend:", r.status, await r.text());
+  if (!r.ok) console.error("resend:", r.status, (await r.text()).slice(0, 120).replace(/[\w.+-]+@[\w.-]+/g, "<email>"));
   return { ok: r.ok };
 }
 

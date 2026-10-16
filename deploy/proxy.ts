@@ -4,7 +4,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const publica = createRouteMatcher([
   "/sign-in(.*)", "/api/entrar",
   // apuração é dado público do TSE: continua acessível mesmo se o login falhar na noite da eleição
-  "/apuracao", "/api/apuracao(.*)", "/api/saude", "/api/cron(.*)",
+  "/apuracao", "/api/apuracao(.*)", "/api/saude", "/api/cron(.*)", "/api/csp",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

@@ -20,7 +20,9 @@ const config: NextConfig = {
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
       // Report-Only primeiro: as páginas geradas têm scripts inline grandes; promover a CSP após validar
-      { key: "Content-Security-Policy-Report-Only", value: CSP },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      { key: "Content-Security-Policy", value: "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" },
+      { key: "Content-Security-Policy-Report-Only", value: CSP + "; report-uri /api/csp" },
     ] }];
   },
   // o HTML do painel é lido do disco pela rota "/"
