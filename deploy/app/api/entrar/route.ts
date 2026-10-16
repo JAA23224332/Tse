@@ -1,5 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { ipAddress } from "@vercel/functions";
+import { resolveMx } from "node:dns/promises";
 import { dentroDoLimite } from "@/lib/limite";
 
 // Garante que existe um cadastro (sem senha) para o e-mail, para o login por código funcionar
@@ -13,6 +14,10 @@ export async function POST(req: Request) {
   if (!/^[a-z0-9._%-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(e) || e.length > 254) {
     return Response.json({ erro: "Digite um e-mail válido, sem o sinal de + no endereço." }, { status: 400 });
   }
+  // domínio precisa receber e-mail: pega erros de digitação (conass.og.br, gmail.con) antes de criar conta e mandar código
+  const dominio = e.split("@")[1];
+  const recebe = await resolveMx(dominio).then((mx) => mx.length > 0).catch(() => false);
+  if (!recebe) return Response.json({ erro: `O endereço "${dominio}" não recebe e-mails. Confira a digitação (ex.: conass.org.br, gmail.com).` }, { status: 400 });
   const clerk = await clerkClient();
   const { data } = await clerk.users.getUserList({ emailAddress: [e] });
   if (data.length === 0) {
