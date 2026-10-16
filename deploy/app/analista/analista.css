@@ -126,3 +126,12 @@
 .an .exemplo { min-width: 0; }
 .an .exemplo .tbl { overflow-x: auto; max-width: 100%; }
 .an .pedido.codigo{border-color:var(--line-2);margin-bottom:16px}.an .pedido.codigo .pedido-campos{grid-template-columns:1fr 1fr 160px}@media(max-width:760px){.an .pedido.codigo .pedido-campos{grid-template-columns:1fr}}
+
+/* cartão de acesso com abas */
+.an .acesso{background:var(--surface);border:1px solid var(--ouro);border-radius:var(--rp);padding:0;overflow:hidden}
+.an .abas{display:flex;border-bottom:1px solid var(--line-2)}
+.an .abas button{flex:1;font:600 14px var(--fb);padding:14px 12px;background:transparent;border:0;border-bottom:3px solid transparent;color:var(--ink-2);cursor:pointer}
+.an .abas button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--ouro);background:var(--surface-2)}
+.an .aba-corpo{padding:16px 18px}
+.an .acesso .pedido,.an .acesso .pedido.codigo{border:0;padding:0;margin:0;background:transparent;box-shadow:none}
+.an .acesso .pedido-topo{display:none}

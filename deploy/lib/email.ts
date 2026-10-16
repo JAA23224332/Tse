@@ -33,7 +33,7 @@ export function emailAprovado(nome: string) {
   return {
     assunto: "Seu acesso ao Raio-X Eleitoral foi aprovado",
     html: base(`<p>Olá, ${esc(nome)}.</p><p>Seu acesso ao <b>Raio-X Eleitoral</b>, o agente de IA do Painel do 2º Turno que analisa os dados oficiais do TSE, foi aprovado.</p>
-<p>Entre com este mesmo e-mail: você recebe um código de 6 dígitos para acessar.</p>
+<p>A administração vai enviar seu código ou link de entrada pelo WhatsApp.</p>
 <p><a href="${SITE}/analista" style="background:#111;color:#fff;padding:10px 14px;border-radius:6px;text-decoration:none">Abrir o Raio-X Eleitoral</a></p>`),
   };
 }

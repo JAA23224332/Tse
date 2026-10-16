@@ -26,7 +26,7 @@ export function Pedido({ email, onEnviado, onDepois, pagina = false }: { email: 
     <div className={pagina ? "pedido-pagina" : "modal"} role={pagina ? undefined : "dialog"} aria-modal={pagina ? undefined : "true"} aria-labelledby="pedido-titulo">
       {estado === "ok" ? (
         <div className="pedido">
-          <div className="pedido-topo"><b id="pedido-titulo">Pedido enviado</b><span className="small muted">A administração libera o acesso para <b>{email ?? f.email}</b> e avisa você. Enquanto isso, as outras páginas do painel seguem abertas.</span></div>
+          <div className="pedido-topo"><b id="pedido-titulo">Pedido enviado</b><span className="small muted">A administração libera o acesso para <b>{email ?? f.email}</b> e manda o código ou link de entrada pelo WhatsApp. Enquanto isso, as outras páginas do painel seguem abertas.</span></div>
           <div className="pedido-rodape"><button className="btn primary" type="button" onClick={onEnviado}>Continuar</button></div>
         </div>
       ) : (

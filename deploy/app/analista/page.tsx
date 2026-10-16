@@ -4,7 +4,7 @@ import { Credito } from "@/app/credito";
 import { Chat } from "./chat";
 import { Aguardando } from "./aguardando";
 import { Vitrine } from "./vitrine";
-import { EntrarComCodigo } from "./codigo";
+import { Acesso } from "./acesso";
 
 function SemLogin() {
   return (
@@ -12,13 +12,10 @@ function SemLogin() {
       <header className="head">
         <span className="eyebrow">Raio-X Eleitoral · agente de IA sobre os dados oficiais do TSE</span>
         <h1>Pergunte aos dados da eleição</h1>
-        <p className="muted">Em português, resposta em segundos com números, tabela e PDF. Para conversar com o Raio-X é preciso entrar; o resto do painel é aberto.</p>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <a className="btn primary" href="/solicitar" style={{ textDecoration: "none" }}>Pedir acesso</a>
-          <a className="btn" href="/sign-in" style={{ textDecoration: "none" }}>Já tenho acesso: entrar</a>
-        </div>
+        <p className="muted">Em português, resposta em segundos com números, tabela e PDF. Para conversar com o Raio-X é preciso um código de acesso; o resto do painel é aberto.</p>
       </header>
-      <div className="an"><EntrarComCodigo /></div>
+      <div className="an"><Acesso email={null} /></div>
+      <p className="small muted" style={{ margin: 0 }}>Já tem acesso aprovado? Use o código ou o link que a administração enviou.</p>
       <div className="an"><Vitrine /></div>
       <Credito />
     </main>

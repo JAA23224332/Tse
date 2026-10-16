@@ -8,7 +8,7 @@ export function Aguardando({ email }: { email: string | null }) {
       <header className="head">
         <span className="eyebrow">Raio-X Eleitoral</span>
         <h1>Aguardando liberação</h1>
-        <p className="muted">Recebemos seu pedido. A administração do painel confere quem é você e libera o acesso para <b>{email}</b>; você recebe um aviso por e-mail. Costuma levar pouco tempo.</p>
+        <p className="muted">Recebemos seu pedido. A administração do painel confere quem é você e libera o acesso para <b>{email}</b> e manda o código ou link de entrada pelo WhatsApp. Costuma levar pouco tempo.</p>
       </header>
       <div className="panel outline" style={{ display: "grid", gap: 10 }}>
         <b>Enquanto isso</b>

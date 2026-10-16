@@ -25,10 +25,10 @@ export default function Entrar() {
       <header className="head">
         <span className="eyebrow">2º Turno 2026</span>
         {estado === "entrando" && <><h1>Entrando…</h1><p className="muted">Um instante: estamos abrindo o painel para você.</p></>}
-        {estado === "erro" && <><h1>Este link não vale mais</h1><p className="muted">Links de acesso valem por 48 horas e só podem ser usados uma vez. Peça um novo à administração do painel ou entre com o código por e-mail.</p></>}
+        {estado === "erro" && <><h1>Este link não vale mais</h1><p className="muted">Links de acesso valem por 48 horas e só podem ser usados uma vez. Peça um novo link ou um código de acesso à administração do painel.</p></>}
         {estado === "sem-link" && <><h1>Link incompleto</h1><p className="muted">Abra o link exatamente como foi enviado.</p></>}
       </header>
-      {estado !== "entrando" && <a className="btn primary" href="/sign-in" style={{ justifySelf: "start", textDecoration: "none" }}>Entrar com código por e-mail</a>}
+      {estado !== "entrando" && <a className="btn primary" href="/solicitar" style={{ justifySelf: "start", textDecoration: "none" }}>Tenho um código / pedir acesso</a>}
       <Credito />
     </main>
   );
