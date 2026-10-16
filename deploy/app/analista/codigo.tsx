@@ -25,7 +25,7 @@ export function EntrarComCodigo({ compacto = false }: { compacto?: boolean }) {
     <form className="pedido codigo" onSubmit={enviar}>
       <div className="pedido-topo"><b>Tenho um código de acesso</b>{!compacto && <span className="small muted">Recebeu um código da administração (formato RX-XXXXXX)? Entre por aqui, sem e-mail de confirmação.</span>}</div>
       <div className="pedido-campos">
-        <label>Nome completo<input type="text" required minLength={3} value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} autoComplete="name" /></label>
+        <label>Nome completo <span className="muted" style={{ fontWeight: 400 }}>(se já cadastrado, pode deixar em branco)</span><input type="text" value={f.nome} onChange={(e) => setF({ ...f, nome: e.target.value })} autoComplete="name" /></label>
         <label>E-mail<input type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} autoComplete="email" /></label>
         <label>Código<input type="text" required value={f.codigo} onChange={(e) => setF({ ...f, codigo: e.target.value.toUpperCase() })} placeholder="RX-XXXXXX" autoComplete="one-time-code" style={{ fontFamily: "var(--fm)", letterSpacing: ".08em" }} /></label>
       </div>

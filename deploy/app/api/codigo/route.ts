@@ -13,18 +13,20 @@ export async function POST(req: Request) {
   const ip = ipAddress(req) ?? "sem-ip";
   if (!(await dentroDoLimite(`codigo:${ip}`, 10))) return Response.json({ erro: "Muitas tentativas. Aguarde uma hora." }, { status: 429 });
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
-  const nome = limpo(b.nome, 120), email = limpo(b.email, 254).toLowerCase();
+  let nome = limpo(b.nome, 120);
+  const email = limpo(b.email, 254).toLowerCase();
   const codigo = limpo(b.codigo, 20).toUpperCase().replace(/\s+/g, "").replace(/^RX-?/, "RX-");
-  if (nome.length < 3) return Response.json({ erro: "Informe seu nome completo." }, { status: 400 });
   if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(email)) return Response.json({ erro: "Informe um e-mail válido." }, { status: 400 });
   if (!/^RX-[A-Z2-9]{6}$/.test(codigo)) return Response.json({ erro: "Código inválido. Ele tem o formato RX-XXXXXX." }, { status: 400 });
 
-  // consome uma utilização só se o código estiver válido (atômico)
+  // consome uma utilização só se o código estiver válido e, quando amarrado a um e-mail, se for esse e-mail (atômico)
   const [c] = (await sql`
     update codigos_acesso set usos = usos + 1
-    where codigo = ${codigo} and not revogado and expira_em > now() and usos < usos_max
-    returning codigo, nota`) as { codigo: string; nota: string | null }[];
-  if (!c) return Response.json({ erro: "Código inválido, vencido ou já usado. Peça outro à administração." }, { status: 400 });
+    where codigo = ${codigo} and not revogado and expira_em > now() and usos < usos_max and (email is null or email = ${email})
+    returning codigo, nota, nome`) as { codigo: string; nota: string | null; nome: string | null }[];
+  if (!c) return Response.json({ erro: "Código inválido, vencido, já usado ou não é para este e-mail. Peça outro à administração." }, { status: 400 });
+  if (nome.length < 3) nome = c.nome ?? "";
+  if (nome.length < 3) { await sql`update codigos_acesso set usos = usos - 1 where codigo = ${codigo}`; return Response.json({ erro: "Informe seu nome completo." }, { status: 400 }); }
 
   const clerk = await clerkClient();
   let user = (await clerk.users.getUserList({ emailAddress: [email] })).data[0];
