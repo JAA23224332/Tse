@@ -4,6 +4,7 @@ import { Credito } from "@/app/credito";
 import { SemAcesso } from "@/app/admin/semacesso";
 import { decidir } from "./acoes";
 import { LinkBotao } from "./linkbotao";
+import { CodigoBotao } from "./codigobotao";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Solicitações de acesso" };
@@ -11,7 +12,7 @@ export const metadata = { title: "Solicitações de acesso" };
 type Sol = {
   id: number; nome: string; email: string; organizacao: string; cargo: string | null; cidade: string | null; uf: string | null;
   whatsapp: string | null; finalidade: string | null; indicacao: string | null; status: string; motivo: string | null;
-  criado_em: string; decidido_em: string | null; decidido_por: string | null; perguntas: number;
+  criado_em: string; decidido_em: string | null; decidido_por: string | null; perguntas: number; codigo_ativo: string | null;
 };
 const quando = (s: string | null) => s ? new Date(s).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }) : "—";
 const rotulo: Record<string, string> = { pendente: "Pendente", aprovada: "Aprovada", recusada: "Recusada" };
@@ -34,6 +35,7 @@ function Cartao({ s }: { s: Sol }) {
       </div>
       {s.finalidade && <p className="small" style={{ margin: 0 }}><span className="muted">Finalidade:</span> {s.finalidade}</p>}
       {s.motivo && <p className="small" style={{ margin: 0 }}><span className="muted">Motivo:</span> {s.motivo}</p>}
+      {s.status !== "recusada" && <CodigoBotao nome={s.nome} email={s.email} whatsapp={s.whatsapp} ativo={s.codigo_ativo} />}
       {s.status === "aprovada" && <LinkBotao email={s.email} whatsapp={s.whatsapp} />}
       <form action={decidir} style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <input type="hidden" name="id" value={s.id} />
@@ -53,7 +55,8 @@ export default async function Solicitacoes() {
   const email = await emailAtual();
   if (!ehAdmin(email)) return <SemAcesso email={email} />;
   const lista = (await sql`
-    select s.*, (select count(*)::int from perguntas p where lower(p.email) = lower(s.email)) as perguntas
+    select s.*, (select count(*)::int from perguntas p where lower(p.email) = lower(s.email)) as perguntas,
+           (select c.codigo from codigos_acesso c where lower(c.email) = lower(s.email) and not c.revogado and c.expira_em > now() and c.usos < c.usos_max order by c.criado_em desc limit 1) as codigo_ativo
     from solicitacoes s order by case s.status when 'pendente' then 0 else 1 end, s.criado_em desc`) as Sol[];
   const pend = lista.filter((s) => s.status === "pendente"), outras = lista.filter((s) => s.status !== "pendente");
   const link = `${process.env.SITE_URL ?? "https://segundoturno.blog"}/solicitar`;
@@ -63,7 +66,7 @@ export default async function Solicitacoes() {
       <header className="head">
         <span className="eyebrow">Raio-X Eleitoral · quem pode usar</span>
         <h1>Solicitações de acesso</h1>
-        <p className="muted">Envie o link <b style={{ fontFamily: "var(--fm)", fontWeight: 500 }}>{link}</b> para quem precisa do Raio-X Eleitoral. Aprovar libera o chat para o e-mail informado; depois, gere o link de acesso e mande pelo WhatsApp (o e-mail de aviso pode não chegar).</p>
+        <p className="muted">Envie o link <b style={{ fontFamily: "var(--fm)", fontWeight: 500 }}>{link}</b> para quem precisa do Raio-X Eleitoral. O jeito mais simples: gere o código de acesso da pessoa e mande pelo WhatsApp; ao usar o código ela entra já aprovada. "Aprovar" serve para quem vai entrar por link ou por e-mail.</p>
         <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin" style={{ color: "var(--ink)" }}>Acessos</a><a href="/analista" style={{ color: "var(--ink)" }}>Raio-X Eleitoral</a><a href="/admin/codigos" style={{ color: "var(--ink)" }}>Códigos</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Link de acesso</a></nav>
       </header>
       <div className="stats">
