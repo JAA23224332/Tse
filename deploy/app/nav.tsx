@@ -7,7 +7,7 @@ import { navHtml } from "@/lib/nav";
 export function BarraNav({ admin }: { admin: boolean }) {
   const path = usePathname();
   const { user } = useUser();
-  if (!path || path.startsWith("/sign-in") || path === "/sair") return null;
+  if (!path || path.startsWith("/sign-in") || path === "/sair" || path === "/entrar") return null;
   const email = user?.primaryEmailAddress?.emailAddress ?? null;
   return <div dangerouslySetInnerHTML={{ __html: navHtml(path, email, admin) }} />;
 }

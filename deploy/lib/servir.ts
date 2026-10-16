@@ -10,7 +10,7 @@ import { navHtml } from "@/lib/nav";
 const cache = new Map<string, string>();
 
 /** Registra o acesso de quem está logado. */
-export async function registrarAcesso(req: Request, pagina: string, userId: string, email: string | null) {
+export async function registrarAcesso(req: Request, pagina: string, userId: string | null, email: string | null) {
   const geo = geolocation(req);
   await sql`
     insert into acessos (email, user_id, ip, cidade, uf, pais, navegador, pagina)
@@ -18,11 +18,10 @@ export async function registrarAcesso(req: Request, pagina: string, userId: stri
             ${geo.countryRegion ?? null}, ${geo.country ?? null}, ${req.headers.get("user-agent")}, ${pagina})`;
 }
 
-/** Serve um arquivo HTML de private/ para quem está logado, com a barra de navegação. */
+/** Serve um arquivo HTML de private/ (página aberta), com a barra de navegação. */
 export async function servirHtml(req: Request, arquivo: string, rota: string) {
-  const { userId } = await auth();
-  if (!userId) return Response.redirect(new URL("/sign-in", req.url));
-  const email = await emailAtual();
+  const { userId } = await auth().catch(() => ({ userId: null }));
+  const email = userId ? await emailAtual().catch(() => null) : null;
   waitUntil(registrarAcesso(req, rota, userId, email).catch((e) => console.error("acesso:", (e as Error).message)));
 
   let html = cache.get(arquivo);

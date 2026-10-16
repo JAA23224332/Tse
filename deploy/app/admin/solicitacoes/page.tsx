@@ -62,7 +62,7 @@ export default async function Solicitacoes() {
         <span className="eyebrow">Raio-X Eleitoral · quem pode usar</span>
         <h1>Solicitações de acesso</h1>
         <p className="muted">Envie o link <b style={{ fontFamily: "var(--fm)", fontWeight: 500 }}>{link}</b> para quem precisa do Raio-X Eleitoral. Aprovar libera o chat para o e-mail informado e avisa a pessoa por e-mail.</p>
-        <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin" style={{ color: "var(--ink)" }}>Acessos</a><a href="/analista" style={{ color: "var(--ink)" }}>Raio-X Eleitoral</a></nav>
+        <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin" style={{ color: "var(--ink)" }}>Acessos</a><a href="/analista" style={{ color: "var(--ink)" }}>Raio-X Eleitoral</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Link de acesso</a></nav>
       </header>
       <div className="stats">
         <div className="stat ouro"><b>{pend.length}</b><span>pendentes</span></div>

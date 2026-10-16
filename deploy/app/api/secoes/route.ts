@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { ipAddress } from "@vercel/functions";
 import { sql } from "@/lib/db";
 import { dentroDoLimite } from "@/lib/limite";
 
@@ -11,8 +11,7 @@ const LIMITE_CSV = 60000;
 
 /** Microdados por seção eleitoral (tabela secoes), filtrados por UF, município, zona, seção ou texto. */
 export async function GET(req: Request) {
-  const { userId } = await auth();
-  if (!userId) return Response.json({ erro: "Não autorizado" }, { status: 401 });
+  const userId = ipAddress(req) ?? "sem-ip";  // página aberta: a cota é por endereço
   if (!(await dentroDoLimite(`secoes:${userId}`, 120))) return Response.json({ erro: "Muitas buscas em pouco tempo. Aguarde alguns minutos." }, { status: 429 });
   const p = new URL(req.url).searchParams;
   const uf = (p.get("uf") ?? "").toUpperCase();

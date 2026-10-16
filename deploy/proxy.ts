@@ -1,14 +1,10 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Públicas: login, pedido de acesso ao analista e suas APIs; todo o resto exige estar logado.
-const publica = createRouteMatcher([
-  "/sign-in(.*)", "/api/entrar",
-  // apuração é dado público do TSE: continua acessível mesmo se o login falhar na noite da eleição
-  "/apuracao", "/api/apuracao(.*)", "/api/saude", "/api/cron(.*)", "/api/csp",
-]);
+// O painel é aberto. Só o Raio-X Eleitoral (chat), o pedido de acesso e a administração exigem login.
+const protegida = createRouteMatcher(["/analista(.*)", "/api/chat(.*)", "/api/solicitar", "/admin(.*)", "/sair"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (!publica(req)) await auth.protect();
+  if (protegida(req)) await auth.protect();
 });
 
 export const config = {

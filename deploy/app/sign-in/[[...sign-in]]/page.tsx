@@ -115,7 +115,7 @@ export default function Entrar() {
               </form>
             )}
             {erro && <p role="alert" className="erro">{erro}</p>}
-            <p className="acesso">O código chega em alguns segundos; confira também a caixa de spam. Quem entra fica registrado; o Raio-X Eleitoral exige aprovação da administração.</p>
+            <p className="acesso">O código chega em alguns segundos; confira também a caixa de spam e a aba "Promoções". Se não chegar, peça à administração um link de acesso. O login só é necessário para o Raio-X Eleitoral; as outras páginas são abertas.</p>
           </div>
         </section>
 
