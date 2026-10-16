@@ -21,8 +21,9 @@ export async function POST(req: Request) {
     aceite: true,  // enviar o formulário é o aceite; o texto está ao lado do botão
   };
   if (s.nome.length < 3) return Response.json({ erro: "Informe seu nome completo." }, { status: 400 });
-  if (s.organizacao.length < 2) return Response.json({ erro: "Informe a organização." }, { status: 400 });
-  if (s.uf && !UFS.includes(s.uf)) return Response.json({ erro: "UF inválida." }, { status: 400 });
+  if (s.organizacao.length < 2) return Response.json({ erro: "Informe a instituição." }, { status: 400 });
+  if (!s.uf || !UFS.includes(s.uf)) return Response.json({ erro: "Escolha o estado." }, { status: 400 });
+  if (!s.finalidade || s.finalidade.length < 10) return Response.json({ erro: "Conte em uma frase por que quer acessar." }, { status: 400 });
 
   const [existente] = (await sql`select status from solicitacoes where lower(email) = ${s.email} order by criado_em desc limit 1`) as { status: string }[];
   // é a própria pessoa logada, então pode saber o estado do seu pedido

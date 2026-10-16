@@ -113,3 +113,9 @@
 .an .pedido.ok{display:block;font-size:14px}.an .pedido-topo{display:grid;gap:2px}.an .pedido-topo b{font-size:17px}
 .an .pedido-campos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}@media(max-width:760px){.an .pedido-campos{grid-template-columns:1fr}}
 .an .pedido label{display:grid;gap:4px;font-size:13px;font-weight:600}.an .pedido-rodape{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+
+.an .modal{position:fixed;inset:0;z-index:60;background:rgba(8,14,12,.92);display:grid;place-items:center;padding:16px;overflow:auto}
+.an .modal .pedido{width:100%;max-width:720px;margin:0;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.an .pedido-campos{grid-template-columns:1fr 120px 1fr}.an .pedido label.largo{grid-column:1/-1}
+.an .pedido textarea{font:inherit;font-size:15px;padding:9px 11px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);min-height:84px;resize:vertical}
+@media(max-width:760px){.an .pedido-campos{grid-template-columns:1fr}}

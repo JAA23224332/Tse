@@ -157,7 +157,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
   const [restantes, setRestantes] = useState(restantesInicial);
   const [pedindo, setPedindo] = useState(false);
   const [pedidoEnviado, setPedidoEnviado] = useState(perfil === "pendente");
-  const precisaPedir = degustacao && (restantes <= 0 || pedindo) && !pedidoEnviado;
+  const esgotado = degustacao && restantes <= 0 && !pedidoEnviado;
   const CHAVE = "raiox_conversa";
   const { messages, sendMessage, status, error, stop, setMessages } = useChat<MensagemAnalista>({
     id: "raiox",
@@ -184,6 +184,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
       sessionStorage.setItem(CHAVE, JSON.stringify(leve));
     } catch {}
   }, [messages, ocupado, restaurado]);
+  useEffect(() => { if (esgotado && !ocupado) setPedindo(true); }, [esgotado, ocupado]);
   const novaConversa = () => { setMessages([]); try { sessionStorage.removeItem(CHAVE); } catch {} };
   const erroTexto = (e: Error) => /fetch|network|load failed/i.test(e.message) ? "Sem conexão. Verifique a internet e tente de novo." : e.message;
   useEffect(() => { if (error && /aprovado|experiência/i.test(error.message) && degustacao) { setRestantes(0); setPedindo(true); } }, [error, degustacao]);
@@ -270,8 +271,8 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
             {!pedidoEnviado && !pedindo && <button type="button" className="btn primary" onClick={() => setPedindo(true)}>Pedir acesso</button>}
           </div>
         )}
-        {precisaPedir && <Pedido email={email} onEnviado={() => { setPedidoEnviado(true); setPedindo(false); }} />}
-        {messages.length === 0 && degustacao && !precisaPedir && <Vitrine onPerguntar={restantes > 0 ? perguntar : undefined} />}
+        {pedindo && !pedidoEnviado && <Pedido email={email} onEnviado={() => { setPedidoEnviado(true); setPedindo(false); }} onDepois={() => setPedindo(false)} />}
+        {messages.length === 0 && degustacao && <Vitrine onPerguntar={restantes > 0 ? perguntar : undefined} />}
         {messages.length === 0 && !degustacao && (
           <div className="capa">
             <span className="eyebrow">Raio-X Eleitoral · agente de IA sobre os dados oficiais do TSE</span>
@@ -343,7 +344,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
           <div ref={fim} />
         </div>
 
-        <div className="caixa" hidden={precisaPedir || (degustacao && pedidoEnviado && restantes <= 0)}>
+        <div className="caixa" hidden={degustacao && restantes <= 0}>
           <form onSubmit={(e) => { e.preventDefault(); perguntar(input); }}>
             <textarea ref={campo} id="pergunta" rows={1} value={input} placeholder="Ex.: onde a abstenção mais custa votos para Lula na Bahia?" aria-label="Pergunta"
               onChange={(e) => { setInput(e.target.value); ajustar(e.target); }}
