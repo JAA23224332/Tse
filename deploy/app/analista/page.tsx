@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { acessoAnalista } from "@/lib/acesso";
 import { Credito } from "@/app/credito";
 import { Chat } from "./chat";
+import { Aguardando } from "./aguardando";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Raio-X Eleitoral" };
@@ -18,5 +19,6 @@ export default async function Analista() {
       </main>
     );
   }
+  if (a.perfil === "pendente") return <Aguardando email={a.email} />;
   return <Chat modo={a.podeUsar && a.restantes === null ? "completo" : "degustacao"} perfil={a.perfil} restantes={a.restantes ?? 0} email={a.email} />;
 }

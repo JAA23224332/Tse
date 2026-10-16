@@ -271,7 +271,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
             {!pedidoEnviado && !pedindo && <button type="button" className="btn primary" onClick={() => setPedindo(true)}>Pedir acesso</button>}
           </div>
         )}
-        {pedindo && !pedidoEnviado && <Pedido email={email} onEnviado={() => { setPedidoEnviado(true); setPedindo(false); }} onDepois={() => setPedindo(false)} />}
+        {pedindo && !pedidoEnviado && <Pedido email={email} onEnviado={() => { setPedidoEnviado(true); setPedindo(false); window.location.assign("/analista"); }} onDepois={() => setPedindo(false)} />}
         {messages.length === 0 && degustacao && <Vitrine onPerguntar={restantes > 0 ? perguntar : undefined} />}
         {messages.length === 0 && !degustacao && (
           <div className="capa">

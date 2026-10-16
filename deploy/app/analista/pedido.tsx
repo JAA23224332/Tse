@@ -26,7 +26,7 @@ export function Pedido({ email, onEnviado, onDepois }: { email: string | null; o
       {estado === "ok" ? (
         <div className="pedido">
           <div className="pedido-topo"><b id="pedido-titulo">Pedido enviado</b><span className="small muted">A administração libera o acesso para <b>{email}</b> e você recebe um aviso. Enquanto isso, as outras páginas do painel seguem abertas.</span></div>
-          <div className="pedido-rodape"><button className="btn primary" type="button" onClick={onEnviado}>Entendi</button></div>
+          <div className="pedido-rodape"><button className="btn primary" type="button" onClick={onEnviado}>Continuar</button></div>
         </div>
       ) : (
         <form className="pedido" onSubmit={enviar}>
