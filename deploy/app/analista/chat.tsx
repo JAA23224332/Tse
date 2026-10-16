@@ -4,6 +4,9 @@ import { DefaultChatTransport } from "ai";
 import { useEffect, useRef, useState } from "react";
 import type { MensagemAnalista } from "@/lib/analista";
 import { relatorioHtml, type MensagemRelatorio } from "@/lib/relatorio";
+import type { Perfil } from "@/lib/acesso";
+import { Pedido } from "./pedido";
+import { Vitrine } from "./vitrine";
 import { Credito } from "@/app/credito";
 import "./analista.css";
 
@@ -147,7 +150,14 @@ function mensagemTexto(m: MensagemAnalista): string {
   return blocos.filter(Boolean).join("\n\n");
 }
 
-export function Chat() {
+type Props = { modo?: "completo" | "degustacao"; perfil?: Perfil; restantes?: number; email?: string | null };
+
+export function Chat({ modo = "completo", perfil = "aprovado", restantes: restantesInicial = 0, email = null }: Props) {
+  const degustacao = modo === "degustacao";
+  const [restantes, setRestantes] = useState(restantesInicial);
+  const [pedindo, setPedindo] = useState(false);
+  const [pedidoEnviado, setPedidoEnviado] = useState(perfil === "pendente");
+  const precisaPedir = degustacao && (restantes <= 0 || pedindo) && !pedidoEnviado;
   const CHAVE = "raiox_conversa";
   const { messages, sendMessage, status, error, stop, setMessages } = useChat<MensagemAnalista>({
     id: "raiox",
@@ -176,6 +186,7 @@ export function Chat() {
   }, [messages, ocupado, restaurado]);
   const novaConversa = () => { setMessages([]); try { sessionStorage.removeItem(CHAVE); } catch {} };
   const erroTexto = (e: Error) => /fetch|network|load failed/i.test(e.message) ? "Sem conexão. Verifique a internet e tente de novo." : e.message;
+  useEffect(() => { if (error && /aprovado|experiência/i.test(error.message) && degustacao) { setRestantes(0); setPedindo(true); } }, [error, degustacao]);
   const [copiado, setCopiado] = useState<string | null>(null);
   const [relatorio, setRelatorio] = useState<string | null>(null);
   const quadro = useRef<HTMLIFrameElement>(null);
@@ -212,7 +223,9 @@ export function Chat() {
   }
   const textoDe = (m: MensagemAnalista) => mensagemTexto(m);
   const conversaTexto = () => messages.map((m) => (m.role === "user" ? "PERGUNTA: " : "RAIO-X ELEITORAL: ") + textoDe(m)).join("\n\n");
-  const perguntar = (texto: string) => { if (texto.trim() && !ocupado) { sendMessage({ text: texto.trim() }); setInput(""); if (campo.current) campo.current.style.height = ""; } };
+  const perguntar = (texto: string) => {
+    if (degustacao && restantes <= 0) { setPedindo(true); return; }
+    if (texto.trim() && !ocupado) { if (degustacao) setRestantes((r) => r - 1); sendMessage({ text: texto.trim() }); setInput(""); if (campo.current) campo.current.style.height = ""; } };
   const ajustar = (el: HTMLTextAreaElement) => { el.style.height = ""; el.style.height = Math.min(160, el.scrollHeight) + "px"; };
 
   return (
@@ -249,7 +262,17 @@ export function Chat() {
       </aside>
 
       <section className="conversa" aria-live="polite">
-        {messages.length === 0 && (
+        {degustacao && (
+          <div className="faixa-degustacao">
+            {pedidoEnviado ? <span><b>Pedido em análise.</b> Você recebe um aviso quando o acesso for liberado.</span>
+              : restantes > 0 ? <span><b>Experimente:</b> você tem {restantes} pergunta{restantes === 1 ? "" : "s"} de cortesia. Gostou? Peça o acesso completo.</span>
+              : <span><b>Suas perguntas de experiência acabaram.</b> Diga quem você é para continuar.</span>}
+            {!pedidoEnviado && !pedindo && <button type="button" className="btn primary" onClick={() => setPedindo(true)}>Pedir acesso</button>}
+          </div>
+        )}
+        {precisaPedir && <Pedido email={email} onEnviado={() => { setPedidoEnviado(true); setPedindo(false); }} />}
+        {messages.length === 0 && degustacao && !precisaPedir && <Vitrine onPerguntar={restantes > 0 ? perguntar : undefined} />}
+        {messages.length === 0 && !degustacao && (
           <div className="capa">
             <span className="eyebrow">Raio-X Eleitoral · agente de IA sobre os dados oficiais do TSE</span>
             <h1>Passe o <i>Raio-X</i> na eleição</h1>
@@ -317,7 +340,7 @@ export function Chat() {
           <div ref={fim} />
         </div>
 
-        <div className="caixa">
+        <div className="caixa" hidden={precisaPedir || (degustacao && pedidoEnviado && restantes <= 0)}>
           <form onSubmit={(e) => { e.preventDefault(); perguntar(input); }}>
             <textarea ref={campo} id="pergunta" rows={1} value={input} placeholder="Ex.: onde a abstenção mais custa votos para Lula na Bahia?" aria-label="Pergunta"
               onChange={(e) => { setInput(e.target.value); ajustar(e.target); }}

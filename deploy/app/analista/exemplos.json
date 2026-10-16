@@ -1,0 +1,137 @@
+[
+ {
+  "pergunta": "Quais os 5 estados onde Lula tem mais votos a ganhar?",
+  "resposta": "São Paulo lidera com folga: sozinho concentra um quinto de todo o potencial nacional. Minas, Bahia, Rio e Pernambuco completam a lista. Na Bahia e em Pernambuco o caminho é mobilizar redutos; em SP, MG e RJ é persuadir eleitores dos candidatos eliminados.",
+  "colunas": [
+   "Estado",
+   "Votos a ganhar",
+   "% Lula no 1º turno",
+   "Abstenção"
+  ],
+  "linhas": [
+   [
+    "SP",
+    784679,
+    "38,2%",
+    "22,5%"
+   ],
+   [
+    "MG",
+    340133,
+    "43,3%",
+    "22,8%"
+   ],
+   [
+    "BA",
+    265422,
+    "66,2%",
+    "20,0%"
+   ],
+   [
+    "RJ",
+    233284,
+    "39,4%",
+    "23,3%"
+   ],
+   [
+    "PE",
+    165107,
+    "63,5%",
+    "18,2%"
+   ]
+  ],
+  "fonte": "TSE, resultado por município (1º turno 2026)"
+ },
+ {
+  "pergunta": "Onde Lula mais perdeu votos desde 2022?",
+  "resposta": "As maiores perdas, em votos, estão nas grandes cidades do Sudeste e do Centro-Oeste. São lugares para recuperar quem votou em Lula em 2022 e foi para um eliminado ou ficou em casa em 2026.",
+  "colunas": [
+   "Município",
+   "% Lula 2022",
+   "% Lula 2026",
+   "Perda (votos)"
+  ],
+  "linhas": [
+   [
+    "São Paulo (SP)",
+    "47,5%",
+    "46,6%",
+    62625
+   ],
+   [
+    "Goiânia (GO)",
+    "33,1%",
+    "28,2%",
+    38452
+   ],
+   [
+    "Salvador (BA)",
+    "67,0%",
+    "65,3%",
+    24983
+   ],
+   [
+    "Aparecida de Goiânia (GO)",
+    "39,8%",
+    "31,6%",
+    21344
+   ],
+   [
+    "Uberlândia (MG)",
+    "44,7%",
+    "40,0%",
+    19320
+   ]
+  ],
+  "fonte": "TSE, resultado por município (1º turno 2022 e 2026)"
+ },
+ {
+  "pergunta": "Em Salvador, quais escolas têm mais abstenção em áreas onde Lula lidera?",
+  "resposta": "Nestes locais Lula tem larga vantagem, mas um em cada quatro eleitores não compareceu. Cada ponto de abstenção recuperado ali é voto líquido: são os endereços para a mobilização de rua.",
+  "colunas": [
+   "Local de votação",
+   "Bairro",
+   "Aptos",
+   "% Lula",
+   "Abstenção"
+  ],
+  "linhas": [
+   [
+    "Colégio Estadual de Nova Esperança",
+    "Nova Esperança",
+    3460,
+    "65,0%",
+    "40,0%"
+   ],
+   [
+    "Escola Municipal Maria Antonieta Alfarano",
+    "Cajazeiras Xi",
+    3057,
+    "67,4%",
+    "36,8%"
+   ],
+   [
+    "Instituto Comenius de Educação",
+    "Tancredo Neves",
+    1789,
+    "70,3%",
+    "27,6%"
+   ],
+   [
+    "Colégio Estadual Úrsula Catharino",
+    "Centro",
+    2102,
+    "64,3%",
+    "27,2%"
+   ],
+   [
+    "Colégio Estadual de Tempo Integral Professora Lélia Gonzalez",
+    "Paripe",
+    7801,
+    "67,6%",
+    "25,7%"
+   ]
+  ],
+  "fonte": "TSE, votação por local de votação (1º turno 2026)"
+ }
+]

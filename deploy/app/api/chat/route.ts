@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { createAgentUIStreamResponse } from "ai";
 import { criarAnalista } from "@/lib/analista";
-import { perfilAtual, podeUsarAnalista } from "@/lib/acesso";
+import { acessoAnalista } from "@/lib/acesso";
 import { sql } from "@/lib/db";
 import { dentroDoLimite } from "@/lib/limite";
 
@@ -15,8 +15,8 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
   const ultima = messages?.at?.(-1);
   const texto = ultima?.parts?.find?.((p: { type: string }) => p.type === "text")?.text ?? "";
-  const { email, perfil } = await perfilAtual();
-  if (!podeUsarAnalista(perfil)) return new Response("Seu acesso ao Raio-X Eleitoral ainda não foi aprovado.", { status: 403 });
+  const { email, podeUsar } = await acessoAnalista(userId);
+  if (!podeUsar) return new Response("Suas perguntas de experiência acabaram. Peça o acesso completo para continuar.", { status: 403 });
   if (!(await dentroDoLimite(`chat:${userId}`, 40))) return new Response("Você fez muitas perguntas na última hora. Aguarde um pouco.", { status: 429 });
   // registra a pergunta (sem a resposta) no histórico de uso
   sql`insert into perguntas (email, user_id, pergunta) values (${email}, ${userId}, ${String(texto).slice(0, 2000)})`.catch(() => {});

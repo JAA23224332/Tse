@@ -18,12 +18,11 @@ export async function POST(req: Request) {
     nome: limpo(b.nome, 120), email: emailSessao, organizacao: limpo(b.organizacao, 120),  // o e-mail é o da conta logada, não o digitado
     cargo: limpo(b.cargo, 120) || null, cidade: limpo(b.cidade, 80) || null, uf: limpo(b.uf, 2).toUpperCase() || null,
     whatsapp: limpo(b.whatsapp, 30) || null, finalidade: limpo(b.finalidade, 600) || null, indicacao: limpo(b.indicacao, 120) || null,
-    aceite: b.aceite === true,
+    aceite: true,  // enviar o formulário é o aceite; o texto está ao lado do botão
   };
   if (s.nome.length < 3) return Response.json({ erro: "Informe seu nome completo." }, { status: 400 });
   if (s.organizacao.length < 2) return Response.json({ erro: "Informe a organização." }, { status: 400 });
   if (s.uf && !UFS.includes(s.uf)) return Response.json({ erro: "UF inválida." }, { status: 400 });
-  if (!s.aceite) return Response.json({ erro: "É preciso aceitar as condições de uso." }, { status: 400 });
 
   const [existente] = (await sql`select status from solicitacoes where lower(email) = ${s.email} order by criado_em desc limit 1`) as { status: string }[];
   // é a própria pessoa logada, então pode saber o estado do seu pedido

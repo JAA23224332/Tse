@@ -102,3 +102,14 @@
 .an .relatorio{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;grid-template-rows:auto 1fr}
 .an .relatorio-barra{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line-2);background:var(--surface)}
 .an .relatorio-quadro{width:100%;height:100%;border:0;background:#fff}
+
+/* degustação, vitrine e pedido */
+.an .faixa-degustacao{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--ouro);border-radius:var(--rp);background:var(--surface);font-size:14px;margin-bottom:14px}
+.an .vitrine{display:grid;gap:14px;margin-bottom:16px}
+.an .exemplo{background:var(--surface);border-radius:var(--rp);padding:16px 18px;display:grid;gap:8px}
+.an .exemplo h3{font-family:var(--fd);font-weight:500;font-size:20px;margin:0}.an .exemplo p{margin:0;color:var(--ink-2);font-size:14px}
+.an .exemplo .fonte{font-size:12px;color:var(--ink-3)}.an .exemplo .btn{justify-self:start}
+.an .pedido{display:grid;gap:12px;background:var(--surface);border:1px solid var(--ouro);border-radius:var(--rp);padding:18px;margin-bottom:16px}
+.an .pedido.ok{display:block;font-size:14px}.an .pedido-topo{display:grid;gap:2px}.an .pedido-topo b{font-size:17px}
+.an .pedido-campos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}@media(max-width:760px){.an .pedido-campos{grid-template-columns:1fr}}
+.an .pedido label{display:grid;gap:4px;font-size:13px;font-weight:600}.an .pedido-rodape{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
