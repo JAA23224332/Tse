@@ -121,3 +121,7 @@
 .an .pedido textarea{font:inherit;font-size:15px;padding:9px 11px;border-radius:6px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);min-height:84px;resize:vertical}
 @media(max-width:760px){.an .pedido-campos{grid-template-columns:1fr}}
 .an .pedido-pagina .pedido{margin:0}
+/* vitrine dentro de páginas comuns (pedido, espera, sem login): tabelas rolam dentro do cartão, nunca alargam a página */
+.wrap > section, .wrap > header, .wrap .an { min-width: 0; max-width: 100%; }
+.an .exemplo { min-width: 0; }
+.an .exemplo .tbl { overflow-x: auto; max-width: 100%; }
