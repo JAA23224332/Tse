@@ -1,4 +1,5 @@
 import exemplos from "./exemplos.json";
+import "./analista.css";
 
 type Exemplo = { pergunta: string; resposta: string; colunas: string[]; linhas: (string | number)[][]; fonte: string };
 const fmt = (v: string | number) => typeof v === "number" ? v.toLocaleString("pt-BR") : v;
