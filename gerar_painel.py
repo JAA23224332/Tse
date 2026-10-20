@@ -46,3 +46,26 @@ _res = {
 with open("deploy/app/sign-in/resumo.json", "w", encoding="utf-8") as f:
     _json.dump(_res, f, ensure_ascii=False, separators=(",", ":"))
 print("deploy/app/sign-in/resumo.json gerado")
+
+# resumo para o Raio-X Eleitoral (lib/analista.ts monta a apresentação a partir daqui; nada de número fixo no código)
+import os as _os
+_b = _d["brasil"]
+_resumo = {
+    "atualizado": _d["atualizado"],
+    "data_1t": "04/10/2026", "data_2t": "25/10/2026",
+    "pct_lula": round(100 * _b["lula"] / _b["validos"], 2), "pct_flavio": round(100 * _b["flavio"] / _b["validos"], 2),
+    "votos_lula": _b["lula"], "votos_flavio": _b["flavio"], "deficit_lula": _b["flavio"] - _b["lula"],
+    "municipios": _res["municipios"],
+    "locais": (sum(1 for _ in open("dados/tratados/locais_votacao_2026.csv", encoding="utf-8-sig")) - 1) if _os.path.exists("dados/tratados/locais_votacao_2026.csv") else None,
+}
+if _os.path.exists("dados/tratados/balanco_2t_dados.json"):  # depois do 2º turno: resultado final no resumo
+    with open("dados/tratados/balanco_2t_dados.json", encoding="utf-8") as f:
+        _b2 = _json.load(f)["brasil"]
+    _tot2 = _b2["lula_2t"] + _b2["flavio_2t"]
+    if _tot2 > 0:
+        _resumo["segundo_turno"] = {"votos_lula": _b2["lula_2t"], "votos_flavio": _b2["flavio_2t"],
+                                    "pct_lula": round(100 * _b2["lula_2t"] / _tot2, 2), "pct_flavio": round(100 * _b2["flavio_2t"] / _tot2, 2),
+                                    "vencedor": "Lula" if _b2["lula_2t"] > _b2["flavio_2t"] else "Flávio Bolsonaro" if _b2["flavio_2t"] > _b2["lula_2t"] else "empate"}
+with open("deploy/app/analista/resumo.json", "w", encoding="utf-8") as f:
+    _json.dump(_resumo, f, ensure_ascii=False, separators=(",", ":"))
+print("deploy/app/analista/resumo.json gerado")

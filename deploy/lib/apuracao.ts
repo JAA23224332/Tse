@@ -16,6 +16,8 @@ import path from "node:path";
 
 const TSE = "https://resultados.tse.jus.br/oficial";
 const TIMEOUT_MS = 8000;
+const PARALELO = 6;   // o TSE (Akamai) limita conexões simultâneas por IP: 57 pedidos de uma vez estouram o timeout
+const TENTATIVAS = 2;
 export const UFS = ["ac", "al", "am", "ap", "ba", "ce", "df", "es", "go", "ma", "mg", "ms", "mt", "pa", "pb", "pe", "pi", "pr", "rj", "rn", "ro", "rr", "rs", "sc", "se", "sp", "to", "zz"];
 const PORTES = [500_000, 100_000, 20_000]; // limites de eleitorado: grande (≥500 mil), médio (≥100 mil), pequeno (≥20 mil), muito pequeno
 const MIN_APURADO = 0.02;      // fração do eleitorado apurada para confiar no swing de um estrato/UF
@@ -46,9 +48,29 @@ export async function carregarBase(): Promise<Base> {
 }
 
 async function json(url: string) {
-  const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS), headers: { "user-agent": "Mozilla/5.0 (apuracao segundoturno.blog)" } });
-  if (!r.ok) throw new Error(`${r.status} ${url}`);
-  return r.json();
+  let erro: unknown;
+  for (let t = 1; t <= TENTATIVAS; t++) {
+    try {
+      const r = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(TIMEOUT_MS), headers: { "user-agent": "Mozilla/5.0 (apuracao segundoturno.blog)" } });
+      if (!r.ok) throw new Error(`${r.status} ${url}`);
+      return await r.json();
+    } catch (e) { erro = e; }
+  }
+  throw erro;
+}
+
+/** Executa as tarefas com no máximo PARALELO em curso; devolve como Promise.allSettled, na mesma ordem. */
+async function emLotes<T>(tarefas: (() => Promise<T>)[]): Promise<PromiseSettledResult<T>[]> {
+  const out: PromiseSettledResult<T>[] = new Array(tarefas.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(PARALELO, tarefas.length) }, async () => {
+    while (i < tarefas.length) {
+      const k = i++;
+      try { out[k] = { status: "fulfilled", value: await tarefas[k]() }; }
+      catch (reason) { out[k] = { status: "rejected", reason }; }
+    }
+  }));
+  return out;
 }
 
 type Parcial = { ele?: string; dg?: string; hg?: string; carg?: { cd?: string; agr?: { par?: { cand?: { n: string; vap: string }[] }[] }[] }[]; v?: Record<string, string>; e?: Record<string, string>; s?: Record<string, string> };
@@ -158,16 +180,22 @@ export async function contadoNacional(ciclo: string, eleicao: number, numLula: s
 export async function apurar(ciclo: string, eleicao: number, cargo: number, numLula: string, numFlavio: string, anterior?: Apuracao | null): Promise<Apuracao> {
   const base = await carregarBase();
   const cod = String(eleicao).padStart(6, "0"), c = String(cargo).padStart(4, "0");
-  const [nacional, ...porUF] = await Promise.allSettled([
-    json(`${TSE}/${ciclo}/${eleicao}/dados/br/br-c${c}-e${cod}-u.json`) as Promise<Parcial>,
-    ...UFS.map(async (uf) => {
-      const [parcial, andamento] = await Promise.all([
-        json(`${TSE}/${ciclo}/${eleicao}/dados/${uf}/${uf}-c${c}-e${cod}-u.json`) as Promise<Parcial>,
-        json(`${TSE}/${ciclo}/${eleicao}/dados/${uf}/${uf}-e${cod}-ab.json`) as Promise<Andamento>,
-      ]);
-      return lerUF(uf, parcial, andamento, base, numLula, numFlavio, eleicao);
-    }),
+  // 57 arquivos, poucos por vez (ver PARALELO): o TSE recusa rajadas do mesmo IP
+  const arquivos = await emLotes<Parcial | Andamento>([
+    () => json(`${TSE}/${ciclo}/${eleicao}/dados/br/br-c${c}-e${cod}-u.json`),
+    ...UFS.flatMap((uf) => [
+      () => json(`${TSE}/${ciclo}/${eleicao}/dados/${uf}/${uf}-c${c}-e${cod}-u.json`),
+      () => json(`${TSE}/${ciclo}/${eleicao}/dados/${uf}/${uf}-e${cod}-ab.json`),
+    ]),
   ]);
+  const nacional = arquivos[0] as PromiseSettledResult<Parcial>;
+  const porUF: PromiseSettledResult<ReturnType<typeof lerUF>>[] = UFS.map((uf, i) => {
+    const p = arquivos[1 + 2 * i], a = arquivos[2 + 2 * i];
+    if (p.status === "rejected") return p;
+    if (a.status === "rejected") return a;
+    try { return { status: "fulfilled", value: lerUF(uf, p.value as Parcial, a.value as Andamento, base, numLula, numFlavio, eleicao) }; }
+    catch (reason) { return { status: "rejected", reason }; }
+  });
   const lidas = porUF.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
   const falhas = UFS.filter((_, i) => porUF[i].status === "rejected");
   for (const [i, r] of porUF.entries()) if (r.status === "rejected") console.error(`apuracao ${UFS[i]}:`, (r.reason as Error).message);

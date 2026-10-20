@@ -16,7 +16,8 @@ from tse_client import RESULTADOS, get_json, municipios
 
 CICLO = "ele2026"
 ELEICOES = {1: {"presidente": (6257, 1), "governador": (6259, 3)}, 2: {"presidente": (6258, 1), "governador": (6260, 3)}}
-UFS_2T_GOV = ["ac", "am", "df", "es", "rj", "rn", "to"]
+# UFs com 2º turno de governador: vêm da configuração do TSE (eleição 6260); a lista abaixo é só conferência
+UFS_2T_GOV_ESPERADAS = ["ac", "am", "df", "es", "rj", "rn", "to"]
 
 BRUTOS = "dados/brutos/resultados_2026"
 SAIDA = "dados/tratados"
@@ -27,10 +28,11 @@ def num(x):
 
 
 def baixar(eleicao, cargo, uf, cd_mun, usar_cache):
-    """Lê do cache local (só quando a apuração já terminou) ou baixa o JSON do município."""
+    """Lê do cache local ou baixa o JSON do município. Um município com 100% das seções não muda mais:
+    o cache vale sempre; com a apuração nacional incompleta (usar_cache=False) só os municípios a 100% são reaproveitados."""
     nome = f"{uf}{cd_mun}-c{cargo:04d}-e{eleicao:06d}-u.json"
     cache = os.path.join(BRUTOS, nome)
-    if usar_cache and os.path.exists(cache):
+    if os.path.exists(cache):
         try:
             with open(cache, encoding="utf-8") as f:
                 d = json.load(f)
@@ -69,7 +71,8 @@ def coletar(eleicao, cargo, ufs, cfg, usar_cache):
     def um(mun):
         return linha_municipio(baixar(eleicao, cargo, mun["uf"], mun["cd"], usar_cache), mun)
 
-    with ThreadPoolExecutor(max_workers=24) as ex:
+    # poucas conexões por vez: o TSE (Akamai) recusa rajadas do mesmo IP; get_json repete em caso de falha
+    with ThreadPoolExecutor(max_workers=8) as ex:
         return list(ex.map(um, tarefas))
 
 
@@ -111,8 +114,14 @@ if __name__ == "__main__":
     todas_ufs = [a["cd"] for a in cfg["abr"]]  # inclui 'zz' (exterior)
     gravar(coletar(*pres, todas_ufs, cfg, completo), f"presidente_{t}t_2026_municipio.csv")
 
-    cfg_gov = municipios(CICLO, gov[0])
-    gravar(coletar(*gov, UFS_2T_GOV, cfg_gov, completo), f"governador_{t}t_2026_municipio.csv")
+    # UFs com 2º turno de governador segundo o TSE (abrangência da eleição 6260), nos dois turnos
+    cfg_gov2 = municipios(CICLO, ELEICOES[2]["governador"][0])
+    ufs_gov_2t = sorted(a["cd"] for a in cfg_gov2["abr"])
+    if ufs_gov_2t != sorted(UFS_2T_GOV_ESPERADAS):
+        print(f"aviso: TSE lista 2º turno de governador em {ufs_gov_2t} (esperado {sorted(UFS_2T_GOV_ESPERADAS)})")
+    cfg_gov = cfg_gov2 if t == 2 else municipios(CICLO, gov[0])
+    gravar(coletar(*gov, ufs_gov_2t, cfg_gov, completo), f"governador_{t}t_2026_municipio.csv")
+    meta["ufs_gov_2t"] = [u.upper() for u in ufs_gov_2t]
 
     with open(os.path.join(SAIDA, f"coleta_{t}t_meta.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=1)

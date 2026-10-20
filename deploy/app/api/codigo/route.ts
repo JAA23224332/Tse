@@ -44,9 +44,9 @@ export async function POST(req: Request) {
   }
   const r = await fetch("https://api.clerk.com/v1/sign_in_tokens", {
     method: "POST", headers: { authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ user_id: user.id, expires_in_seconds: 600 }),
-  });
-  const j = (await r.json()) as { token?: string };
+    body: JSON.stringify({ user_id: user.id, expires_in_seconds: 600 }), signal: AbortSignal.timeout(10000),
+  }).catch(() => null);
+  const j = ((await r?.json().catch(() => null)) ?? {}) as { token?: string };
   if (!j.token) return Response.json({ erro: "Não foi possível abrir a sessão. Tente de novo." }, { status: 500 });
   return Response.json({ ok: true, ticket: j.token });
 }

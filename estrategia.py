@@ -98,7 +98,7 @@ def calcular(df, p=PREMISSAS):
     # potencial (onde Lula tem o que ganhar: orienta o esforço) e saldo líquido (o que muda o placar nacional)
     d["ganho_total"] = d["ganho_mobilizar"] + d["ganho_persuadir"]
     d["saldo_liquido"] = d["mobilizar_liquido"] + d["persuadir_liquido"]
-    d["ganho_por_mil_eleitores"] = 1000 * d["ganho_total"] / d["eleitorado"]
+    d["ganho_por_mil_eleitores"] = 1000 * d["ganho_total"] / d["eleitorado"].where(d["eleitorado"] > 0)  # sem divisão por zero (vira NaN → 0)
     for c in ["mobilizar_liquido", "ganho_mobilizar", "ganho_mobilizar_1pp", "ganho_total", "saldo_liquido", "ganho_por_mil_eleitores"]:
         d[c] = d[c].fillna(0)  # localidades do exterior sem votos válidos
 
@@ -128,8 +128,8 @@ def por_uf(d):
     )
     g["margem_lula"] = g.lula - g.flavio
     g["pct_lula"] = 100 * g.lula / g.validos
-    g["pct_abstencao"] = 100 * g.abstencao / g.eleitorado
-    g["ganho_por_mil"] = 1000 * g.ganho_total / g.eleitorado
+    g["pct_abstencao"] = 100 * g.abstencao / g.eleitorado.where(g.eleitorado > 0)
+    g["ganho_por_mil"] = 1000 * g.ganho_total / g.eleitorado.where(g.eleitorado > 0)
     g["peso_nacional_pct"] = 100 * g.eleitorado / g.eleitorado.sum()
     g["share_do_ganho_pct"] = 100 * g.ganho_total / g.ganho_total.sum()
     return g.sort_values("ganho_total", ascending=False).round(1)

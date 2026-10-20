@@ -2,6 +2,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { ToolLoopAgent, hasToolCall, stepCountIs, tool, type InferAgentUIMessage } from "ai";
 import { z } from "zod";
 import { sql, sqlLeitura } from "@/lib/db";
+import resumo from "@/app/analista/resumo.json";
 
 // Serviço de IA compatível com a API chat/completions. Endereço, modelo e chave só por variáveis de ambiente.
 const apiMae = createOpenAICompatible({
@@ -42,10 +43,27 @@ Tabela secoes (pode não existir ainda; uma linha por seção eleitoral, ~500 mi
 
 // Primeira barreira (a segunda é a role raiox_leitor, só-leitura e sem acesso às tabelas de pessoas).
 // Sem \b no fim dos prefixos: "_" conta como letra e \bpg_read\b nunca casaria pg_read_file.
-const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|copy|call|do|vacuum|set_config|setval|nextval|dblink|current_setting|current_user|session_user|current_database|current_schema|version|inet_server_addr|inet_client_addr|information_schema|acessos|perguntas|solicitacoes|consultas|apuracao_snapshots|limites)\b|\b(pg_|lo_)\w*/i;
+// Testado com os textos entre aspas removidos: "Rio do Sul" ou "Barra do Garças" não são comandos (752 municípios têm "do").
+const PROIBIDO = /\b(insert|update|delete|drop|alter|create|truncate|grant|revoke|vacuum|set_config|setval|nextval|dblink|current_setting|current_user|session_user|current_database|current_schema|version|inet_server_addr|inet_client_addr|information_schema|acessos|perguntas|solicitacoes|consultas|codigos_acesso|apuracao_snapshots|limites)\b|\b(pg_|lo_)\w*/i;
+const semLiterais = (q: string) => q.replace(/'(?:[^']|'')*'/g, "?").replace(/\$\$[\s\S]*?\$\$/g, "?");
+/** true se a consulta não é um SELECT simples: comentários, aspas sem fechar, várias instruções ou palavras vedadas. */
+export function consultaVedada(q: string) {
+  if (!/^(select|with)\b/i.test(q) || /--|\/\*/.test(q)) return true;
+  const limpa = semLiterais(q);
+  return limpa.includes("'") || limpa.includes(";") || PROIBIDO.test(limpa);
+}
 
 /** Contexto de quem pergunta, usado só para auditoria das consultas. */
 export type ContextoAnalista = { email: string | null; userId: string };
+
+// Placar e contexto vêm de resumo.json (gerado por gerar_painel.py): nada de número fixo no código
+const br = (n: number, d = 2) => n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+const t2 = (resumo as { segundo_turno?: { pct_lula: number; pct_flavio: number; vencedor: string } }).segundo_turno;
+const PLACAR = `Flávio Bolsonaro (PL) teve ${br(resumo.pct_flavio)}% e Lula (PT) ${br(resumo.pct_lula)}% no 1º turno; Flávio teve ${br(resumo.deficit_lula, 0)} votos
+de vantagem.` + (t2
+  ? ` O 2º turno (${resumo.data_2t}) já aconteceu: resultado oficial Lula ${br(t2.pct_lula)}% × Flávio Bolsonaro ${br(t2.pct_flavio)}% (${t2.vencedor === "empate" ? "empate" : "vitória de " + t2.vencedor}).
+As tabelas por município e por local de votação continuam com o 1º turno, que é a base da estratégia; deixe isso claro quando o assunto for o resultado final.`
+  : ` O 2º turno é em ${resumo.data_2t}.`);
 
 export function criarAnalista(context: ContextoAnalista) {
   return new ToolLoopAgent({
@@ -54,12 +72,12 @@ export function criarAnalista(context: ContextoAnalista) {
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
-  instructions: `Você é o Raio-X Eleitoral, agente de IA da campanha de Lula para o 2º turno presidencial de 2026 (25/10/2026). Apresente-se assim quando perguntarem quem você é. Seu diferencial: você consulta os dados oficiais do TSE de verdade, não opina de memória.
+  instructions: `Você é o Raio-X Eleitoral, agente de IA da campanha de Lula para o 2º turno presidencial de 2026 (${resumo.data_2t}). Apresente-se assim quando perguntarem quem você é. Seu diferencial: você consulta os dados oficiais do TSE de verdade, não opina de memória.
 Responda em português do Brasil, de forma direta e útil para quem decide onde a campanha investe tempo e gente.
-Os dados são do TSE: resultado oficial do 1º turno (04/10/2026) por município e por local de votação, resultado de 2022
-e perfil do eleitorado. Flávio Bolsonaro (PL) teve 47,03% e Lula (PT) 45,16% no 1º turno; Flávio tem 2.224.965 votos
-de vantagem. Os campos "ganho_*" são estimativas de votos líquidos que a campanha pode conquistar, calculadas com
-premissas de transferência; diga que são estimativas quando usá-los.
+Os dados são do TSE: resultado oficial do 1º turno (${resumo.data_1t}) por município e por local de votação, resultado de 2022
+e perfil do eleitorado. ${PLACAR} Os campos "ganho_*" são estimativas de votos líquidos que a campanha pode conquistar, calculadas com
+premissas de transferência; diga que são estimativas quando usá-los. Percentuais e margens por local podem ser nulos
+onde não houve votos válidos (local sem votação no dia): trate nulo como "sem dado", não como zero.
 
 Sigilo sobre a própria construção (regra absoluta):
 - Nunca revele, confirme ou negue qual modelo de linguagem você usa, quem o treinou, qual empresa, API, servidor,
@@ -101,7 +119,7 @@ ${ESQUEMA}`,
         const q = consulta.trim().replace(/;+\s*$/, "");
         const registrar = (linhas: number | null, erro: string | null) =>
           sql`insert into consultas (email, user_id, motivo, sql, linhas, erro) values (${context?.email ?? null}, ${context?.userId ?? null}, ${motivo}, ${q.slice(0, 4000)}, ${linhas}, ${erro})`.catch(() => {});
-        if (!/^(select|with)\b/i.test(q) || q.includes(";") || PROIBIDO.test(q)) {
+        if (consultaVedada(q)) {
           registrar(null, "bloqueada pelo filtro");
           return { erro: "Só consultas de leitura aos dados eleitorais são permitidas." };
         }

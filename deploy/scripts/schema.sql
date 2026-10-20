@@ -12,4 +12,8 @@ create table if not exists limites (chave text not null, janela timestamptz not 
 -- create role raiox_leitor login password '...'; grant usage on schema public to raiox_leitor;
 -- grant select on municipios, ufs, locais_votacao, secoes, candidatos to raiox_leitor;
 -- alter role raiox_leitor set statement_timeout = '15s'; alter role raiox_leitor set default_transaction_read_only = on;
-create table if not exists codigos_acesso (codigo text primary key, nota text, usos_max int not null default 1, usos int not null default 0, expira_em timestamptz not null, criado_por text, criado_em timestamptz not null default now(), revogado boolean not null default false);
+create table if not exists codigos_acesso (codigo text primary key, nota text, nome text, email text, usos_max int not null default 1, usos int not null default 0, expira_em timestamptz not null, criado_por text, criado_em timestamptz not null default now(), revogado boolean not null default false);
+-- bancos criados antes de 16/10: código amarrado a uma pessoa
+alter table codigos_acesso add column if not exists nome text;
+alter table codigos_acesso add column if not exists email text;
+create index if not exists codigos_acesso_email on codigos_acesso (lower(email));

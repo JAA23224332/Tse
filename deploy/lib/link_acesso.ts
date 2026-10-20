@@ -18,8 +18,9 @@ export async function gerarLinkAcesso(_estado: { link?: string; erro?: string; e
   }
   const r = await fetch("https://api.clerk.com/v1/sign_in_tokens", {
     method: "POST", headers: { authorization: `Bearer ${process.env.CLERK_SECRET_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({ user_id: user.id, expires_in_seconds: 48 * 3600 }),
-  });
+    body: JSON.stringify({ user_id: user.id, expires_in_seconds: 48 * 3600 }), signal: AbortSignal.timeout(10000),
+  }).catch(() => null);
+  if (!r) return { erro: "O serviço de login não respondeu. Tente de novo." };
   const j = (await r.json()) as { token?: string; errors?: { message: string }[] };
   if (!j.token) return { erro: `Falha ao gerar o link: ${j.errors?.[0]?.message ?? r.status}` };
   console.log("link de acesso gerado por", admin, "para", email.replace(/^(.).*@/, "$1***@"));

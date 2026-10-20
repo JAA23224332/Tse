@@ -122,7 +122,7 @@ def resumo(df, por, elim):
     g["% abstenção"] = 100 * g["abstencao"] / g["eleitorado"]
     g["% branco+nulo"] = 100 * (g["brancos"] + g["nulos"]) / g["comparecimento"]
     g["votos em disputa"] = g["eliminados"] + g["brancos"] + g["nulos"]
-    return g.round(2)
+    return g.replace([np.inf, -np.inf], np.nan).round(2)  # grupo sem válidos/eleitorado não vira Infinity no JSON
 
 
 def transferencia_2022():
@@ -202,7 +202,16 @@ def governadores():
     g = ler("governador_1t_2026_municipio.csv")
     g22 = ler("governador_2022_municipio.csv")
     res, muns = [], []
+    # só as UFs que o TSE lista no 2º turno de governador (coleta grava em coleta_1t_meta.json); ex.: RJ saiu da lista
+    try:
+        with open(f"{T}/coleta_1t_meta.json", encoding="utf-8") as f:
+            ufs_2t = set(json.load(f)["ufs_gov_2t"])
+    except (FileNotFoundError, KeyError):
+        ufs_2t = set(GOV_2T)
     for uf, (a, b) in GOV_2T.items():
+        if uf not in ufs_2t:
+            print(f"aviso: {uf} não está no 2º turno de governador segundo o TSE; ignorado")
+            continue
         x = g[g.uf == uf].copy()
         cands = [c for c in x.columns if "(" in c and x[c].sum() > 0]
         elim = [c for c in cands if c not in (a, b)]
@@ -242,11 +251,11 @@ if __name__ == "__main__":
 
     # Comparação por UF com 2022
     c22 = base.groupby("uf")[["lula_22t1", "lula_22t2", "validos_22t1", "validos_22t2",
-                              "abstencao_22t1", "abstencao_22t2", "aptos_22t1"]].sum()
+                              "abstencao_22t1", "abstencao_22t2", "aptos_22t1", "aptos_22t2"]].sum()
     por_uf["% Lula 22 T1"] = (100 * c22.lula_22t1 / c22.validos_22t1).round(2)
     por_uf["% Lula 22 T2"] = (100 * c22.lula_22t2 / c22.validos_22t2).round(2)
     por_uf["% abstenção 22 T1"] = (100 * c22.abstencao_22t1 / c22.aptos_22t1).round(2)
-    por_uf["% abstenção 22 T2"] = (100 * c22.abstencao_22t2 / c22.aptos_22t1).round(2)
+    por_uf["% abstenção 22 T2"] = (100 * c22.abstencao_22t2 / c22.aptos_22t2).round(2)
 
     with pd.ExcelWriter(f"{T}/analise_2turno_2026.xlsx") as xw:
         pd.DataFrame({

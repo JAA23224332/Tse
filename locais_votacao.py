@@ -7,6 +7,7 @@ Saída:   dados/tratados/locais_votacao_2026.csv — um local por linha, com vot
 """
 
 import os
+import sys
 import zipfile
 
 import pandas as pd
@@ -40,7 +41,7 @@ def premissas_por_numero():
 
 
 def ler_uf(caminho):
-    partes = []
+    partes, nomes = [], []
     with zipfile.ZipFile(caminho) as z:
         nome = [n for n in z.namelist() if n.endswith(".csv")][0]
         for chunk in pd.read_csv(z.open(nome), sep=";", encoding="latin1", usecols=COLS,
@@ -48,9 +49,17 @@ def ler_uf(caminho):
             c = chunk[(chunk.NR_TURNO == TURNO) & (chunk.CD_CARGO == 1)]
             c = c.assign(tipo=c.NR_VOTAVEL.map(NUMEROS).fillna("e" + c.NR_VOTAVEL))  # e<numero> = candidato eliminado
             partes.append(c.groupby(CHAVE + ["tipo"], as_index=False).QT_VOTOS.sum())
+            nomes.append(c.drop_duplicates(CHAVE)[CHAVE + ["NM_LOCAL_VOTACAO", "DS_LOCAL_VOTACAO_ENDERECO"]])
+    if sum(len(p) for p in partes) == 0:
+        # o TSE republica o ZIP com o 2º turno só dias depois da eleição; sem isso sairia um arquivo todo zerado
+        print(f"ERRO: {caminho} não tem linhas do turno {TURNO} para presidente. Aguarde a republicação do TSE.", file=sys.stderr)
+        sys.exit(3)
     g = pd.concat(partes).groupby(CHAVE + ["tipo"], as_index=False).QT_VOTOS.sum()
     g["CD_MUNICIPIO"] = g["CD_MUNICIPIO"].str.zfill(5)  # o cadastro de locais usa 5 dígitos
-    return g.pivot_table(index=CHAVE, columns="tipo", values="QT_VOTOS", aggfunc="sum", fill_value=0).reset_index()
+    nm = pd.concat(nomes).drop_duplicates(CHAVE)
+    nm["CD_MUNICIPIO"] = nm["CD_MUNICIPIO"].str.zfill(5)
+    piv = g.pivot_table(index=CHAVE, columns="tipo", values="QT_VOTOS", aggfunc="sum", fill_value=0).reset_index()
+    return piv.merge(nm, on=CHAVE, how="left")
 
 
 def ler_locais():
@@ -78,9 +87,19 @@ if __name__ == "__main__":
     votos = ler_uf(f"{B}/secao/votacao_secao_2026_BR.zip")
     votos = votos[votos.SG_UF != "ZZ"]
     print(len(votos), "locais com votos", flush=True)
-    loc = ler_locais().merge(votos, on=CHAVE, how="left")   # locais do cadastro sem votos ficam com zero
-    sem_cadastro = votos.merge(ler_locais()[CHAVE], on=CHAVE, how="left", indicator=True).query('_merge == "left_only"')
-    print(len(sem_cadastro), "locais com votos sem cadastro (votos:", int(sem_cadastro.get("lula", 0).sum()), "Lula)")
+    # outer: locais do cadastro sem votos ficam com zero; locais com votos fora do cadastro (≈1% dos votos) entram
+    # com nome e endereço do próprio arquivo de votação e o município pela base municipal (sem bairro nem coordenadas)
+    loc = ler_locais().merge(votos, on=CHAVE, how="outer", indicator=True)
+    fora = loc._merge == "right_only"
+    print(int(fora.sum()), "locais com votos sem cadastro (votos:", int(loc.loc[fora, "lula"].sum()), "Lula); mantidos sem bairro/coordenadas")
+    nomes_mun = pd.read_csv(f"{T}/estrategia_municipio.csv", sep=";", dtype={"cd_tse": str}, usecols=["cd_tse", "municipio"])
+    nomes_mun = dict(zip(nomes_mun.cd_tse.str.zfill(5), nomes_mun.municipio))
+    loc.loc[fora, "municipio"] = loc.loc[fora, "CD_MUNICIPIO"].map(nomes_mun).fillna("")
+    loc.loc[fora, "local"] = loc.loc[fora, "NM_LOCAL_VOTACAO"].fillna("")
+    loc.loc[fora, "endereco"] = loc.loc[fora, "DS_LOCAL_VOTACAO_ENDERECO"].fillna("")
+    loc.loc[fora, "bairro"] = ""
+    loc["aptos"] = loc.aptos.fillna(0).astype(int)
+    loc = loc.drop(columns=["_merge", "NM_LOCAL_VOTACAO", "DS_LOCAL_VOTACAO_ENDERECO"])
     ecols = [c for c in loc.columns if c.startswith("e") and c[1:].isdigit()]
     for c in ["lula", "flavio", "brancos", "nulos", *ecols]:
         loc[c] = loc[c].fillna(0).astype(int) if c in loc else 0

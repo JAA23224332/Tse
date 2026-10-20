@@ -100,9 +100,10 @@ for pasta in ["deploy/private/locais", "painel/locais"]:
 tot_kb = 0
 for uf, g in loc.groupby("uf"):
     g = g.sort_values("aptos", ascending=False)
-    linhas = [[round(r.lat, 4), round(r.lon, 4), int(r.aptos), r.pct_lula, r.pct_flavio, r.pct_abstencao, round(r.ganho_total),
+    num = lambda v: None if pd.isna(v) else v  # NaN não existe em JSON: o navegador recusava o arquivo inteiro da UF
+    linhas = [[round(r.lat, 4), round(r.lon, 4), int(r.aptos), num(r.pct_lula), num(r.pct_flavio), num(r.pct_abstencao), round(num(r.ganho_total) or 0),
                str(r.local).title()[:60], ("" if pd.isna(r.bairro) else str(r.bairro).title()[:40]), r.cd_tse] for r in g.itertuples()]
-    s = json.dumps(linhas, ensure_ascii=False, separators=(",", ":"))
+    s = json.dumps(linhas, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
     tot_kb += len(s) // 1024
     for pasta in ["deploy/private/locais", "painel/locais"]:
         with open(f"{pasta}/{uf}.json", "w", encoding="utf-8") as f:
@@ -304,7 +305,7 @@ function legenda(){
 
 // ---------- bolhas (raio em pixels quase constante, cresce um pouco com o zoom)
 let vb = vbox(0,0,W);
-const unidadePx = () => vb.w / svg.getBoundingClientRect().width;
+const unidadePx = () => { const w = svg.getBoundingClientRect().width; return vb.w / (w > 0 ? w : 800); };  // svg sem largura (aba oculta, rotação): sem Infinity
 function bolhas(){
   const g = $("bolhas"); if (modo!=="bolha"){ g.innerHTML=""; return; }
   const M = MED[medida], u = unidadePx(), k = Math.pow(W/vb.w, .35);
@@ -319,15 +320,17 @@ const urlLocais = uf => /\.html?$/.test(location.pathname) ? `locais/${uf}.json`
 async function carregar(uf){
   if (LOC[uf] || pedindo[uf]) return; pedindo[uf]=true;
   try { const r = await fetch(urlLocais(uf)); if(!r.ok) throw 0; LOC[uf] = await r.json(); escolas(); }
-  catch { LOC[uf] = null; aviso(location.protocol==="file:" ? "As escolas só carregam na versão publicada do painel (este arquivo abriu direto do computador)." : `Não foi possível carregar as escolas de ${uf}.`); }
+  catch { LOC[uf] = null; aviso(location.protocol==="file:" ? "As escolas só carregam na versão publicada do painel (este arquivo abriu direto do computador)." : `Não foi possível carregar as escolas de ${uf}. Tentando de novo em instantes.`);
+    setTimeout(() => { if (LOC[uf] === null) { delete LOC[uf]; pedindo[uf] = false; escolas(); } }, 15000); }  // tenta de novo (rede instável no celular)
 }
 let avisoT; function aviso(t){ const a=$("aviso"); a.textContent=t; a.hidden=!t; clearTimeout(avisoT); if(t) avisoT=setTimeout(()=>a.hidden=true, 6000); }
 function escolas(){
   const g = $("escolas");
-  $("areas").classList.toggle("fundo", vb.w <= LIMIAR);
-  if (vb.w > LIMIAR){ g.innerHTML=""; return; }
+  if (vb.w > LIMIAR){ g.innerHTML=""; $("areas").classList.remove("fundo"); return; }
   const ufs = UFS.filter(uf => { const b=box[uf]; return b.x1>vb.x && b.x0<vb.x+vb.w && b.y1>vb.y && b.y0<vb.y+vb.h; });
   ufs.forEach(carregar);
+  // só esmaece os municípios quando há escolas desenhadas por cima; se elas não carregaram, o mapa continua inteiro
+  $("areas").classList.toggle("fundo", ufs.some(uf => LOC[uf] && LOC[uf].length));
   const M = MED[medida], u = unidadePx(), vis = [];
   for (const uf of ufs) for (const l of (LOC[uf]||[])){ const x=px(l[1]), y=py(l[0]); if (x>vb.x&&x<vb.x+vb.w&&y>vb.y&&y<vb.y+vb.h) vis.push([x,y,l]); if (vis.length>=6000) break; }
   g.innerHTML = vis.map(([x,y,l],i) => `<circle data-i="${i}" cx="${x.toFixed(2)}" cy="${y.toFixed(2)}" r="${((2+9*Math.sqrt(l[2]/6000))*u).toFixed(3)}" fill="${M.escola(l)}" class="${fixoEscola===l?"sel":""}"/>`).join("");
@@ -412,7 +415,13 @@ svg.addEventListener("click", e => {
 });
 
 // zoom, arrasto e pinça (viewBox)
-const aplicar = () => { svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); svg.style.setProperty("--k", (vb.w/W).toFixed(4)); svg.style.setProperty("--ks", Math.sqrt(vb.w/W).toFixed(4)); rotulos(); agendar(); };
+// o mapa nunca sai da tela: janela sempre com números válidos e com pelo menos 20% sobre o Brasil (arrasto ou link com valores fora)
+function conter(){
+  if (![vb.x,vb.y,vb.w].every(Number.isFinite) || vb.w <= 0) vb = vbox(0,0,W);
+  vb.w = Math.max(4, Math.min(W*1.5, vb.w)); vb.h = vb.w*ASP;
+  vb.x = Math.max(-0.8*vb.w, Math.min(W - 0.2*vb.w, vb.x)); vb.y = Math.max(-0.8*vb.h, Math.min(W*ASP - 0.2*vb.h, vb.y));
+}
+const aplicar = () => { conter(); svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); svg.style.setProperty("--k", (vb.w/W).toFixed(4)); svg.style.setProperty("--ks", Math.sqrt(vb.w/W).toFixed(4)); rotulos(); agendar(); };
 let raf=0; function agendar(){ cancelAnimationFrame(raf); raf = requestAnimationFrame(()=>{ bolhas(); escolas(); hash(); }); }
 function zoom(f, cx=vb.x+vb.w/2, cy=vb.y+vb.h/2){ const w=Math.max(4,Math.min(W*1.5,vb.w*f)); vb = vbox(cx-(cx-vb.x)*w/vb.w, cy-(cy-vb.y)*w/vb.h, w); aplicar(); }
 function voar(b, folga=1.15){ const w=Math.max(Math.max(b.x1-b.x0,(b.y1-b.y0)/ASP)*folga, 4); vb=vbox((b.x0+b.x1)/2-w/2, (b.y0+b.y1)/2-w*ASP/2, w); aplicar(); }

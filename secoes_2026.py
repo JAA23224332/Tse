@@ -8,6 +8,7 @@ Saída:   dados/tratados/secoes_2026.csv — uma seção por linha, com votos de
 """
 
 import os
+import sys
 import zipfile
 
 import pandas as pd
@@ -28,6 +29,9 @@ def ler_votos():
             c = chunk[(chunk.NR_TURNO == TURNO) & (chunk.CD_CARGO == 1) & (chunk.SG_UF != "ZZ")]
             nomes.update(dict(zip(c.NR_VOTAVEL, c.NM_VOTAVEL)))
             partes.append(c.groupby(CHAVE + ["NR_LOCAL_VOTACAO", "NR_VOTAVEL"], as_index=False).QT_VOTOS.sum())
+    if sum(len(p) for p in partes) == 0:
+        print(f"ERRO: o ZIP de seções não tem linhas do turno {TURNO} para presidente. Aguarde a republicação do TSE.", file=sys.stderr)
+        sys.exit(3)
     g = pd.concat(partes).groupby(CHAVE + ["NR_LOCAL_VOTACAO", "NR_VOTAVEL"], as_index=False).QT_VOTOS.sum()
     g["CD_MUNICIPIO"] = g.CD_MUNICIPIO.str.zfill(5)
     w = g.pivot_table(index=CHAVE + ["NR_LOCAL_VOTACAO"], columns="NR_VOTAVEL", values="QT_VOTOS", aggfunc="sum", fill_value=0)
@@ -85,6 +89,6 @@ if __name__ == "__main__":
     df = df[ordem + [c for c in vcols if c not in ("v13", "v22", "v95", "v96")]].sort_values(["uf", "cd_tse", "zona", "secao"])
     df.to_csv(f"{T}/secoes_2026{SUFIXO}.csv", sep=";", index=False, encoding="utf-8-sig")
     cand = pd.DataFrame(sorted(nomes.items()), columns=["numero", "nome"])
-    cand.to_csv(f"{T}/candidatos_2026.csv", sep=";", index=False, encoding="utf-8-sig")
+    cand.to_csv(f"{T}/candidatos_2026{SUFIXO}.csv", sep=";", index=False, encoding="utf-8-sig")  # com sufixo: não sobrescreve o do 1º turno
     print(len(df), "seções |", df.aptos.sum(), "aptos |", df.comparecimento.sum(), "comparecimento |", df.lula.sum(), "Lula |", df.flavio.sum(), "Flávio")
     print(cand.to_string(index=False))

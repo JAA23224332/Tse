@@ -8,7 +8,11 @@ import type { Perfil } from "@/lib/acesso";
 import { Pedido } from "./pedido";
 import { Vitrine } from "./vitrine";
 import { Credito } from "@/app/credito";
+import resumo from "./resumo.json";
 import "./analista.css";
+
+const N_MUN = resumo.municipios.toLocaleString("pt-BR");
+const N_LOC = resumo.locais ? `${Math.round(resumo.locais / 1000)} mil` : "milhares de";
 
 const TEMAS: { tema: string; perguntas: string[] }[] = [
   { tema: "Onde ganhar", perguntas: [
@@ -247,9 +251,9 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
         <div>
           <h2>O que o Raio-X consulta</h2>
           <div className="fontes">
-            <div className="fonte"><i /><span><b>5.570 municípios</b>resultado do 1º turno, 2022, abstenção, perfil do eleitorado e votos a ganhar</span></div>
+            <div className="fonte"><i /><span><b>{N_MUN} municípios</b>resultado do 1º turno, 2022, abstenção, perfil do eleitorado e votos a ganhar</span></div>
             <div className="fonte"><i /><span><b>27 estados</b>totais, margens e peso de cada um no ganho nacional</span></div>
-            <div className="fonte"><i /><span><b>93 mil locais de votação</b>escola por escola, com bairro, abstenção e margem</span></div>
+            <div className="fonte"><i /><span><b>{N_LOC} locais de votação</b>escola por escola, com bairro, abstenção e margem</span></div>
           </div>
         </div>
         <div className="temas">
@@ -277,7 +281,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
           <div className="capa">
             <span className="eyebrow">Raio-X Eleitoral · agente de IA sobre os dados oficiais do TSE</span>
             <h1>Passe o <i>Raio-X</i> na eleição</h1>
-            <p className="muted">Em português, como perguntaria a uma pessoa da equipe. O Raio-X Eleitoral consulta os resultados oficiais do TSE (1º turno de 2026, 2022, perfil do eleitorado e 93 mil locais de votação), mostra a consulta que fez e responde com números e uma recomendação.</p>
+            <p className="muted">Em português, como perguntaria a uma pessoa da equipe. O Raio-X Eleitoral consulta os resultados oficiais do TSE (1º turno de 2026, 2022, perfil do eleitorado e {N_LOC} locais de votação), mostra a consulta que fez e responde com números e uma recomendação.</p>
             <div className="cards">
               {CARDS.map(([tema, p]) => <button key={p} type="button" className="card" onClick={() => perguntar(p)}><small>{tema}</small>{p}</button>)}
             </div>

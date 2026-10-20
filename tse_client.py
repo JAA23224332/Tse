@@ -8,6 +8,8 @@ Só usa a biblioteca padrão. Fontes:
 
 import gzip
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -20,12 +22,24 @@ SENADO = "https://legis.senado.leg.br/dadosabertos"
 IBGE = "https://servicodados.ibge.gov.br/api/v1"
 
 
-def get_json(url, params=None, timeout=60):
+def get_json(url, params=None, timeout=60, tentativas=3):
+    """GET com até 3 tentativas (espera 2 s, 4 s) em erro de rede ou 5xx; 4xx (ex.: 404) falha na hora."""
     if params:
         url += "?" + urllib.parse.urlencode(params)
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        raw = r.read()
+    for t in range(1, tentativas + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                raw = r.read()
+            break
+        except urllib.error.HTTPError as e:
+            if e.code < 500 or t == tentativas:
+                raise
+            time.sleep(2 * t)
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if t == tentativas:
+                raise
+            time.sleep(2 * t)
     if raw[:2] == b"\x1f\x8b":  # IBGE responde gzip mesmo sem Accept-Encoding
         raw = gzip.decompress(raw)
     return json.loads(raw.decode("utf-8"))

@@ -44,3 +44,65 @@ def test_base_apuracao_igual_coleta(pres):
     base = json.load(open("deploy/private/base_apuracao.json"))
     assert len(base) == len(pres)
     assert sum(b["lula"] for b in base.values()) == pres[LU].sum()
+
+
+# ---- acrescentados em 20/10: pegam os erros encontrados na revisão (todos baratos: só leem CSV/JSON já gerados)
+import os
+
+def _json_estrito(caminho):
+    def recusa(c):
+        raise ValueError(f"{caminho} tem {c} (NaN/Infinity não existem em JSON e quebram o navegador)")
+    return json.load(open(caminho, encoding="utf-8"), parse_constant=recusa)
+
+
+def test_locais_somam_como_municipios():
+    """Locais de votação sem cadastro entram no outer join: a soma por local bate com a soma por município (±0,1%)."""
+    l = pd.read_csv(f"{T}/locais_votacao_2026.csv", sep=";", usecols=["lula", "flavio", "aptos", "comparecimento"])
+    e = pd.read_csv(f"{T}/estrategia_municipio.csv", sep=";", usecols=["uf", LU, FL])
+    e = e[e.uf != "ZZ"]
+    assert abs(l.lula.sum() / e[LU].sum() - 1) < 0.001
+    assert abs(l.flavio.sum() / e[FL].sum() - 1) < 0.001
+
+
+def test_secoes_e_candidatos():
+    s = pd.read_csv(f"{T}/secoes_2026.csv", sep=";", usecols=["uf", "lula", "flavio", "comparecimento"])
+    e = pd.read_csv(f"{T}/estrategia_municipio.csv", sep=";", usecols=["uf", LU, FL])
+    e = e[e.uf != "ZZ"]
+    assert s.lula.sum() == e[LU].sum() and s.flavio.sum() == e[FL].sum()
+    assert s.comparecimento.sum() > 0
+    cand = pd.read_csv(f"{T}/candidatos_2026.csv", sep=";", dtype=str)
+    assert {"13", "22"} <= set(cand.numero) and len(cand) >= 4
+
+
+def test_jsons_sem_nan():
+    for nome in ["painel_dados.json", "estrategia_dados.json", "balanco_2t_dados.json"]:
+        if os.path.exists(f"{T}/{nome}"):
+            _json_estrito(f"{T}/{nome}")
+    for uf in os.listdir("deploy/private/locais"):
+        _json_estrito(f"deploy/private/locais/{uf}")
+
+
+def test_resumo_do_agente(pres):
+    r = _json_estrito("deploy/app/analista/resumo.json")
+    assert r["deficit_lula"] == int(pres[FL].sum() - pres[LU].sum())
+    assert r["municipios"] == 5571 and r["locais"] and r["locais"] > 90_000
+    assert abs(r["pct_flavio"] - 100 * pres[FL].sum() / pres.validos.sum()) < 0.01
+
+
+def test_governadores_conforme_tse():
+    d = _json_estrito(f"{T}/painel_dados.json")
+    meta = _json_estrito(f"{T}/coleta_1t_meta.json")
+    if "ufs_gov_2t" in meta:
+        assert {g["uf"] for g in d["governadores"]} == set(meta["ufs_gov_2t"])
+
+
+def test_segundo_turno_se_existir():
+    arq = f"{T}/presidente_2t_2026_municipio.csv"
+    if not os.path.exists(arq):
+        pytest.skip("2º turno ainda não coletado")
+    t2 = pd.read_csv(arq, sep=";", dtype={"cd_tse": str})
+    t1 = pd.read_csv(f"{T}/presidente_1t_2026_municipio.csv", sep=";", dtype={"cd_tse": str})
+    assert len(t2) == len(t1)
+    assert (t2.validos > 0).mean() > 0.99, "2º turno com municípios zerados: coleta parcial?"
+    assert len([c for c in t2.columns if "(" in c]) == 2
+    assert _json_estrito(f"{T}/coleta_2t_meta.json")["totalizacao_final"] is True

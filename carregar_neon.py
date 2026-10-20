@@ -4,6 +4,8 @@ Lê DATABASE_URL de deploy/.env.local. Recria as tabelas a cada execução.
 Tabelas: municipios, ufs, locais_votacao (se existir o CSV), premissas.
 """
 
+import hashlib
+import json
 import os
 import re
 import sys
@@ -12,6 +14,15 @@ import pandas as pd
 import psycopg
 
 T = "dados/tratados"
+
+
+def assinatura(caminho):
+    """SHA-256 do arquivo: recarrega a tabela só quando o conteúdo muda (a data do arquivo muda a cada execução)."""
+    h = hashlib.sha256()
+    with open(caminho, "rb") as f:
+        for bloco in iter(lambda: f.read(1 << 20), b""):
+            h.update(bloco)
+    return h.hexdigest()
 
 
 def url_banco():
@@ -58,25 +69,46 @@ def carregar(cur, df, tabela, chave=None):
 if __name__ == "__main__":
     mun = pd.read_csv(f"{T}/estrategia_municipio.csv", sep=";", dtype={"cd_tse": str, "cd_ibge": str})
     uf = pd.read_csv(f"{T}/estrategia_uf.csv", sep=";")
-    with psycopg.connect(url_banco()) as conn, conn.cursor() as cur:
+    assert len(mun) > 5000 and mun["LULA (PT)"].sum() > 0, "estrategia_municipio.csv vazio ou zerado: não carrega"
+    with psycopg.connect(url_banco(), connect_timeout=20) as conn, conn.cursor() as cur:
         carregar(cur, mun, "municipios", "uf")
         carregar(cur, uf, "ufs")
         if os.path.exists(f"{T}/locais_votacao_2026.csv"):
             loc = pd.read_csv(f"{T}/locais_votacao_2026.csv", sep=";", dtype={"cd_tse": str})
+            assert loc.lula.sum() > 0, "locais_votacao_2026.csv zerado: não carrega"
             carregar(cur, loc, "locais_votacao", "uf, cd_tse")
-        # seções (269 MB no banco): só recarrega se o CSV for mais novo que a última carga ou com RECARREGAR_SECOES=1
+        # seções (269 MB no banco, quase metade da cota do Neon): só recarrega quando o CONTEÚDO do CSV muda
+        # (assinatura guardada em .secoes_carregadas) ou com RECARREGAR_SECOES=1; candidatos idem
         marca = f"{T}/.secoes_carregadas"
-        csv_sec = f"{T}/secoes_2026.csv"
-        if os.path.exists(csv_sec) and (os.environ.get("RECARREGAR_SECOES") == "1" or not os.path.exists(marca)
-                                        or os.path.getmtime(csv_sec) > os.path.getmtime(marca)):
-            cur.execute("drop table if exists secoes"); cur.connection.commit()  # libera espaço antes de copiar
-            sec = pd.read_csv(csv_sec, sep=";", dtype={"cd_tse": str, "cep": str})
+        csv_sec, csv_cand = f"{T}/secoes_2026.csv", f"{T}/candidatos_2026.csv"
+        try:
+            with open(marca, encoding="utf-8") as f:
+                carregado = json.load(f)
+        except (FileNotFoundError, ValueError):
+            # marcador antigo (arquivo vazio, por data) ou inexistente: considera a carga atual válida e só guarda a assinatura
+            carregado = {} if not os.path.exists(marca) else {"secoes": assinatura(csv_sec) if os.path.exists(csv_sec) else None,
+                                                               "candidatos": assinatura(csv_cand) if os.path.exists(csv_cand) else None}
+        atual = {"secoes": assinatura(csv_sec) if os.path.exists(csv_sec) else None,
+                 "candidatos": assinatura(csv_cand) if os.path.exists(csv_cand) else None}
+        forcar = os.environ.get("RECARREGAR_SECOES") == "1"
+        if atual["secoes"] and (forcar or atual["secoes"] != carregado.get("secoes")):
+            sec = pd.read_csv(csv_sec, sep=";", dtype={"cd_tse": str, "cep": str})  # lê e valida ANTES de apagar a tabela
+            assert len(sec) > 400_000 and sec.lula.sum() > 0, "secoes_2026.csv incompleto ou zerado: tabela secoes mantida"
+            cur.execute("drop table if exists secoes"); cur.connection.commit()  # libera espaço antes de copiar (cota do Neon)
             carregar(cur, sec, "secoes", "uf, cd_tse, zona, secao")
             cur.execute("create index on secoes (uf, zona, secao)")
-            carregar(cur, pd.read_csv(f"{T}/candidatos_2026.csv", sep=";", dtype=str), "candidatos")
-            open(marca, "w").close()
+            cur.connection.commit()
+            carregado["secoes"] = atual["secoes"]
+            forcar = True  # candidatos acompanham
         else:
             print("secoes: sem mudança, não recarregada")
+        if atual["candidatos"] and (forcar or atual["candidatos"] != carregado.get("candidatos")):
+            cand = pd.read_csv(csv_cand, sep=";", dtype=str)
+            assert len(cand) >= 2 and {"13", "22"} <= set(cand.numero), "candidatos_2026.csv sem Lula/Flávio: não carrega"
+            carregar(cur, cand, "candidatos")
+            carregado["candidatos"] = atual["candidatos"]
+        with open(marca, "w", encoding="utf-8") as f:
+            json.dump(carregado, f)
         cur.execute("""
             comment on table municipios is 'Resultado do 1º turno de 2026 para presidente por município, com 2022, perfil do eleitorado e potencial de ganho para Lula';
             comment on table ufs is 'Agregado por UF do 1º turno de 2026 e potencial de ganho para Lula';

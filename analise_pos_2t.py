@@ -33,7 +33,11 @@ if __name__ == "__main__":
     a["eliminados"] = t1[elim_cols].sum(axis=1)
     b = t2[["cd_tse", "eleitorado", "comparecimento", "abstencao", "brancos", "nulos", "validos", LU, FL]].rename(
         columns=lambda c: c if c == "cd_tse" else f"{c}_2t")
-    d = a.merge(b, on="cd_tse", how="inner")
+    d = a.merge(b, on="cd_tse", how="outer", indicator=True)
+    so_um = d[d._merge != "both"]
+    if len(so_um):
+        print(f"aviso: {len(so_um)} municípios só em um dos turnos (fora dos totais):", so_um.cd_tse.tolist()[:10])
+    d = d[d._merge == "both"].drop(columns="_merge").copy()
 
     # o que mudou
     d["pct_lula_1t"] = pct(d[LU], d[LU] + d[FL]);          d["pct_lula_2t"] = pct(d[f"{LU}_2t"], d[f"{LU}_2t"] + d[f"{FL}_2t"])
@@ -47,7 +51,8 @@ if __name__ == "__main__":
     d["pool_disponivel"] = pool
     d["parcela_lula_do_pool"] = pct(d.ganho_lula, pool)
     d["parcela_flavio_do_pool"] = pct(d.ganho_flavio, pool)
-    d["vencedor_1t"] = np.where(d[LU] > d[FL], "Lula", "Flávio");  d["vencedor_2t"] = np.where(d[f"{LU}_2t"] > d[f"{FL}_2t"], "Lula", "Flávio")
+    quem = lambda l, f: np.select([l > f, f > l], ["Lula", "Flávio"], default="Empate")
+    d["vencedor_1t"] = quem(d[LU], d[FL]);  d["vencedor_2t"] = quem(d[f"{LU}_2t"], d[f"{FL}_2t"])
     d["virou"] = d.vencedor_1t != d.vencedor_2t
 
     por_uf = d.groupby("uf").agg(municipios=("cd_tse", "count"), eleitorado=("eleitorado_2t", "sum"),
@@ -67,21 +72,26 @@ if __name__ == "__main__":
     }
     brasil["parcela_lula_do_crescimento_pct"] = round(100 * brasil["ganho_lula"] / max(1, brasil["ganho_lula"] + brasil["ganho_flavio"]), 1)
 
-    # comparação com as premissas do motor (o que a campanha supôs × o que aconteceu)
+    # comparação com as premissas do motor (o que a campanha supôs × o que aconteceu), na mesma régua:
+    # saldo_liquido (o que Lula ganha menos o que Flávio ganha) × ganho real líquido; ganho_total é só o potencial bruto de Lula
     try:
-        est = ler("estrategia_municipio.csv")[["cd_tse", "ganho_total", "territorio"]]
+        est = ler("estrategia_municipio.csv")[["cd_tse", "ganho_total", "saldo_liquido", "territorio"]]
         d = d.merge(est, on="cd_tse", how="left")
         d["ganho_liquido_real"] = d.ganho_lula - d.ganho_flavio
-        premissa_vs_real = {"ganho_liquido_previsto": int(est.ganho_total.sum()), "ganho_liquido_real": int(d.ganho_liquido_real.sum())}
-        por_terr = d.groupby("territorio").agg(municipios=("cd_tse", "count"), previsto=("ganho_total", "sum"), real=("ganho_liquido_real", "sum"),
-                                                swing_medio_pp=("swing_lula_pp", "mean")).round(1)
+        premissa_vs_real = {"saldo_liquido_previsto": int(est.saldo_liquido.sum()), "ganho_liquido_real": int(d.ganho_liquido_real.sum()),
+                            "potencial_bruto_lula_previsto": int(est.ganho_total.sum())}
+        pesos = d.eleitorado.clip(lower=1)
+        por_terr = d.groupby("territorio").agg(municipios=("cd_tse", "count"), previsto=("saldo_liquido", "sum"), real=("ganho_liquido_real", "sum"),
+                                                potencial_bruto=("ganho_total", "sum"))
+        por_terr["swing_medio_pp"] = (d.swing_lula_pp.fillna(0) * pesos).groupby(d.territorio).sum() / pesos.groupby(d.territorio).sum()  # ponderado pelo eleitorado
+        por_terr = por_terr.round(1)
     except FileNotFoundError:
         premissa_vs_real, por_terr = {}, pd.DataFrame()
 
     cols = CHAVE + ["eleitorado", "pct_lula_1t", "pct_lula_2t", "swing_lula_pp", LU, FL, f"{LU}_2t", f"{FL}_2t", "eliminados",
                     "ganho_lula", "ganho_flavio", "pool_disponivel", "parcela_lula_do_pool", "parcela_flavio_do_pool",
                     "pct_abst_1t", "pct_abst_2t", "var_comparecimento", "var_brancos_nulos", "vencedor_1t", "vencedor_2t", "virou"]
-    cols += [c for c in ["territorio", "ganho_total", "ganho_liquido_real"] if c in d]
+    cols += [c for c in ["territorio", "ganho_total", "saldo_liquido", "ganho_liquido_real"] if c in d]
     out = d[cols].round(2).sort_values("eleitorado", ascending=False)
     out.to_csv(f"{T}/balanco_2t_municipio.csv", sep=";", index=False, encoding="utf-8-sig")
     por_uf.to_csv(f"{T}/balanco_2t_uf.csv", sep=";", encoding="utf-8-sig")
