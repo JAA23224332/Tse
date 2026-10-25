@@ -14,3 +14,9 @@
 .ap .destaque{color:var(--ouro);font-weight:600}
 .ap tr.faint td{color:var(--ink-3)}
 .ap svg text{font:10.5px var(--fb);fill:var(--ink-3)}
+.ap .gov{display:grid;gap:12px}.ap h2.sub{font-family:var(--fd);font-weight:500;font-size:22px;letter-spacing:-.01em}
+.ap .govs{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}@media(max-width:420px){.ap .govs{grid-template-columns:1fr}}
+.ap .govs h3{font-family:var(--fb);font-size:15px;font-weight:600}
+.ap .gl{display:grid;grid-template-columns:1fr auto;gap:0 10px;align-items:baseline}.ap .gl .num{font-family:var(--fd);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}.ap .gl .n{grid-column:1/-1}
+.ap .gbar i:first-child{background:var(--ouro)}.ap .gbar i:last-child{background:var(--ink-3)}
+.ap .eleito{color:var(--ouro);font-size:12px;text-transform:uppercase;letter-spacing:.06em}

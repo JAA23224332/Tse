@@ -319,6 +319,8 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
                     }
                     case "tool-grafico":
                       return p.state === "output-available" ? <Grafico key={i} {...p.output} /> : null;
+                    case "tool-apuracao_ao_vivo":
+                      return <details key={i} className="passo"><summary><IconeBanco />{p.state === "output-available" ? <span>Consultou a apuração ao vivo</span> : <span className="pensando">Lendo a apuração <i /><i /><i /></span>}</summary></details>;
                     default: return null;
                   }
                 })}

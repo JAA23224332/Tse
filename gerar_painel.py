@@ -66,6 +66,12 @@ if _os.path.exists("dados/tratados/balanco_2t_dados.json"):  # depois do 2º tur
         _resumo["segundo_turno"] = {"votos_lula": _b2["lula_2t"], "votos_flavio": _b2["flavio_2t"],
                                     "pct_lula": round(100 * _b2["lula_2t"] / _tot2, 2), "pct_flavio": round(100 * _b2["flavio_2t"] / _tot2, 2),
                                     "vencedor": "Lula" if _b2["lula_2t"] > _b2["flavio_2t"] else "Flávio Bolsonaro" if _b2["flavio_2t"] > _b2["lula_2t"] else "empate"}
+        try:  # coleta parcial (madrugada) ou final: o Raio-X diz qual
+            with open("dados/tratados/coleta_2t_meta.json", encoding="utf-8") as f:
+                _m2 = _json.load(f)
+            _resumo["segundo_turno"].update({"pct_secoes": _m2.get("pct_secoes"), "final": bool(_m2.get("totalizacao_final")), "gerado_em": _m2.get("gerado_em")})
+        except FileNotFoundError:
+            pass
 with open("deploy/app/analista/resumo.json", "w", encoding="utf-8") as f:
     _json.dump(_resumo, f, ensure_ascii=False, separators=(",", ":"))
 print("deploy/app/analista/resumo.json gerado")

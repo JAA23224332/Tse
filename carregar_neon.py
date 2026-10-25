@@ -109,6 +109,27 @@ if __name__ == "__main__":
             carregado["candidatos"] = atual["candidatos"]
         with open(marca, "w", encoding="utf-8") as f:
             json.dump(carregado, f)
+        # 2º turno por município (depois da apuração): resultado e balanço 1º × 2º turno, presidente e governador
+        LU, FL = "LULA (PT)", "FLAVIO BOLSONARO (PL)"
+        if os.path.exists(f"{T}/balanco_2t_municipio.csv"):
+            b2 = pd.read_csv(f"{T}/balanco_2t_municipio.csv", sep=";", dtype={"cd_tse": str})
+            b2 = b2.rename(columns={LU: "votos_lula_1t", FL: "votos_flavio_1t", f"{LU}_2t": "votos_lula_2t", f"{FL}_2t": "votos_flavio_2t"})
+            if b2.votos_lula_2t.sum() + b2.votos_flavio_2t.sum() > 0:
+                carregar(cur, b2, "resultado_2t_municipio", "uf")
+                carregar(cur, pd.read_csv(f"{T}/balanco_2t_uf.csv", sep=";"), "resultado_2t_uf")
+            else:
+                print("resultado_2t_municipio: 2º turno ainda zerado, não carregado")
+        if os.path.exists(f"{T}/governador_2t_2026_municipio.csv"):
+            g2 = pd.read_csv(f"{T}/governador_2t_2026_municipio.csv", sep=";", dtype={"cd_tse": str, "cd_ibge": str})
+            votos = [c for c in g2.columns if "(" in c]
+            if len(g2) and g2[votos].to_numpy().sum() > 0:
+                # formato longo (uma linha por município e candidato): os nomes dos candidatos mudam por UF
+                fixas = [c for c in g2.columns if c not in votos]
+                g2l = g2.melt(id_vars=fixas, value_vars=votos, var_name="candidato", value_name="votos").dropna(subset=["votos"])
+                g2l = g2l[g2l.groupby(["uf", "candidato"]).votos.transform("sum") > 0]  # só os candidatos de cada UF
+                carregar(cur, g2l, "governador_2t_municipio", "uf")
+            else:
+                print("governador_2t_municipio: 2º turno ainda zerado, não carregado")
         cur.execute("""
             comment on table municipios is 'Resultado do 1º turno de 2026 para presidente por município, com 2022, perfil do eleitorado e potencial de ganho para Lula';
             comment on table ufs is 'Agregado por UF do 1º turno de 2026 e potencial de ganho para Lula';

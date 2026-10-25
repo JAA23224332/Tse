@@ -21,3 +21,4 @@ painel/*.html
 !painel/painel_template.html
 __pycache__/
 *.pyc
+logs/

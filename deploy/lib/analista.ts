@@ -39,6 +39,16 @@ Tabela secoes (pode não existir ainda; uma linha por seção eleitoral, ~500 mi
   brancos, nulos, pct_lula, pct_flavio, pct_abstencao, margem_lula, e colunas v<numero> com os votos de cada outro candidato
   (nomes na tabela candidatos: numero, nome). Seções agregadas têm votos zero (votam na principal). Consultas nessa tabela
   devem sempre filtrar por uf e, de preferência, cd_tse.
+Tabela resultado_2t_municipio (pode não existir ainda; carregada depois da apuração do 2º turno, uma linha por município):
+  uf, cd_tse, municipio, eleitorado, pct_lula_1t, pct_lula_2t (% de Lula entre os dois, em cada turno), swing_lula_pp (mudança em pontos),
+  votos_lula_1t, votos_flavio_1t, votos_lula_2t, votos_flavio_2t, eliminados, ganho_lula, ganho_flavio (votos a mais do 1º para o 2º turno),
+  pool_disponivel, parcela_lula_do_pool, parcela_flavio_do_pool, pct_abst_1t, pct_abst_2t, var_comparecimento, var_brancos_nulos,
+  vencedor_1t, vencedor_2t ('Lula' | 'Flávio' | 'Empate'), virou (boolean), territorio, ganho_total, saldo_liquido (previsto pela estratégia),
+  ganho_liquido_real (o que Lula ganhou menos o que Flávio ganhou, de fato).
+Tabela resultado_2t_uf (pode não existir ainda): uf, municipios, eleitorado, lula_1t, flavio_1t, lula_2t, flavio_2t, eliminados,
+  ganho_lula, ganho_flavio, abst_1t, abst_2t, virou (municípios que viraram), pct_lula_1t, pct_lula_2t, swing_lula_pp, pct_abst_1t, pct_abst_2t.
+Tabela governador_2t_municipio (pode não existir ainda; 2º turno de governador em AC, AM, DF, ES, RN, TO): uf, cd_tse, municipio,
+  eleitorado, comparecimento, abstencao, brancos, nulos, validos, pct_secoes_apuradas, candidato ('NOME (PARTIDO)'), votos.
 `;
 
 // Primeira barreira (a segunda é a role raiox_leitor, só-leitura e sem acesso às tabelas de pessoas).
@@ -53,16 +63,63 @@ export function consultaVedada(q: string) {
   return limpa.includes("'") || limpa.includes(";") || PROIBIDO.test(limpa);
 }
 
+// Apuração em tempo real: lê as mesmas rotas públicas da página /apuracao (snapshot do coletor, com a CDN na frente)
+const SITE = process.env.SITE_URL ?? "https://segundoturno.blog";
+const um = (x: number) => Math.round(x * 10) / 10;
+async function apuracaoAoVivo() {
+  const pegar = async (rota: string) => {
+    const r = await fetch(SITE + rota, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error(String(r.status));
+    return r.json();
+  };
+  const [p, g] = await Promise.allSettled([pegar("/api/apuracao"), pegar("/api/apuracao/governadores")]);
+  type UF = { uf: string; pst: number; lula: number; flavio: number; projLula: number; projFlavio: number; swing: number; swingConfiavel: boolean; dh: string };
+  type Gov = { uf: string; pst: number; secoes: number; final: boolean; dh: string; candidatos: { nome: string; partido: string; votos: number; eleito: boolean }[] };
+  let presidente: unknown = { erro: "Apuração indisponível neste momento." };
+  if (p.status === "fulfilled") {
+    const d = p.value, b = d.brasil;
+    if (d.modo !== "oficial" || !b || b.lula + b.flavio === 0) {
+      presidente = { situacao: "A apuração do 2º turno ainda não começou (o TSE começa a divulgar depois das 17h de Brasília, quando as urnas fecham)." };
+    } else {
+      const tot = b.lula + b.flavio, ptot = (b.projLula ?? 0) + (b.projFlavio ?? 0);
+      presidente = {
+        situacao: b.pst >= 100 ? "apuração concluída" : "apuração em andamento",
+        horario_dados_tse: b.dh, secoes_apuradas_pct: um(b.pst),
+        votos_lula: b.lula, votos_flavio: b.flavio, pct_lula: um(100 * b.lula / tot), pct_flavio: um(100 * b.flavio / tot),
+        diferenca_votos: Math.abs(b.lula - b.flavio), quem_lidera: b.lula > b.flavio ? "Lula" : b.flavio > b.lula ? "Flávio Bolsonaro" : "empate",
+        brancos: b.brancos, nulos: b.nulos, abstencao_pct: b.eleitorado ? um(100 * (1 - b.comparecimento / b.eleitorado)) : null,
+        projecao_final: ptot ? { pct_lula: um(100 * b.projLula / ptot), pct_flavio: um(100 * b.projFlavio / ptot), margem_mais_ou_menos_pontos: b.faixa,
+          observacao: "estimativa que aplica, ao que falta apurar, a mudança observada desde o 1º turno; não é resultado oficial" } : null,
+        por_uf: (d.ufs as UF[]).map((u) => ({ uf: u.uf, secoes_apuradas_pct: um(u.pst), votos_lula: u.lula, votos_flavio: u.flavio,
+          pct_lula: u.lula + u.flavio ? um(100 * u.lula / (u.lula + u.flavio)) : null,
+          pct_lula_projetado: u.projLula + u.projFlavio ? um(100 * u.projLula / (u.projLula + u.projFlavio)) : null,
+          mudanca_desde_1turno_pontos: u.lula + u.flavio ? um(100 * u.swing) : null })),
+      };
+    }
+  }
+  const governadores = g.status === "fulfilled" && Array.isArray(g.value.ufs)
+    ? (g.value.ufs as Gov[]).map((u) => {
+        const tot = u.candidatos.slice(0, 2).reduce((s, c) => s + c.votos, 0);
+        return { uf: u.uf, secoes_apuradas_pct: um(u.pst), totalizado: u.final, horario_dados_tse: u.dh,
+          candidatos: u.candidatos.slice(0, 2).map((c) => ({ nome: c.nome, partido: c.partido, votos: c.votos, pct: tot ? um(100 * c.votos / tot) : null, eleito: c.eleito })) };
+      })
+    : { erro: "indisponível neste momento" };
+  return { consultado_em: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }), presidente, governadores_2turno: governadores };
+}
+
 /** Contexto de quem pergunta, usado só para auditoria das consultas. */
 export type ContextoAnalista = { email: string | null; userId: string };
 
 // Placar e contexto vêm de resumo.json (gerado por gerar_painel.py): nada de número fixo no código
 const br = (n: number, d = 2) => n.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
-const t2 = (resumo as { segundo_turno?: { pct_lula: number; pct_flavio: number; vencedor: string } }).segundo_turno;
+const t2 = (resumo as { segundo_turno?: { pct_lula: number; pct_flavio: number; vencedor: string; pct_secoes?: number; final?: boolean; gerado_em?: string } }).segundo_turno;
+const t2final = !!t2 && (t2.final || (t2.pct_secoes ?? 100) >= 100);
 const PLACAR = `Flávio Bolsonaro (PL) teve ${br(resumo.pct_flavio)}% e Lula (PT) ${br(resumo.pct_lula)}% no 1º turno; Flávio teve ${br(resumo.deficit_lula, 0)} votos
 de vantagem.` + (t2
-  ? ` O 2º turno (${resumo.data_2t}) já aconteceu: resultado oficial Lula ${br(t2.pct_lula)}% × Flávio Bolsonaro ${br(t2.pct_flavio)}% (${t2.vencedor === "empate" ? "empate" : "vitória de " + t2.vencedor}).
-As tabelas por município e por local de votação continuam com o 1º turno, que é a base da estratégia; deixe isso claro quando o assunto for o resultado final.`
+  ? (t2final
+    ? ` O 2º turno (${resumo.data_2t}) já aconteceu: resultado oficial Lula ${br(t2.pct_lula)}% × Flávio Bolsonaro ${br(t2.pct_flavio)}% (${t2.vencedor === "empate" ? "empate" : "vitória de " + t2.vencedor}).`
+    : ` O 2º turno (${resumo.data_2t}) foi apurado em parte: com ${br(t2.pct_secoes ?? 0, 1)}% das seções (TSE ${t2.gerado_em ?? ""}), Lula ${br(t2.pct_lula)}% × Flávio Bolsonaro ${br(t2.pct_flavio)}%. Para o número atual, use a apuração em tempo real.`)
+    + ` O resultado do 2º turno por município está em resultado_2t_municipio; as demais tabelas continuam com o 1º turno, base da estratégia.`
   : ` O 2º turno é em ${resumo.data_2t}.`);
 
 export function criarAnalista(context: ContextoAnalista) {
@@ -106,6 +163,17 @@ Como trabalhar:
 - Correlações de perfil (idade, escolaridade) são entre municípios, não entre pessoas: deixe isso claro quando usar.
 - Se o usuário pedir algo fora dos dados (pesquisas, notícias), diga que não tem essa fonte.
 
+Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília):
+- Para qualquer pergunta sobre o resultado do 2º turno, quem está na frente, quanto já foi apurado, a projeção, um estado
+  na apuração ou os governadores do 2º turno (AC, AM, DF, ES, RN, TO), chame apuracao_ao_vivo ANTES de responder. Nunca use
+  números de memória nem de respostas anteriores: a contagem muda a cada minuto.
+- Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
+- A projeção é uma estimativa com margem (±). Não declare vencedor: o vencedor é quem o TSE declara ao fim da totalização.
+  Se a projeção estiver fora da margem, diga "a projeção indica", nunca "venceu".
+- Para cruzar a apuração com a estratégia (ex.: "Lula está melhor ou pior que no 1º turno em MG?"), use a mudança desde o
+  1º turno por UF e, se precisar, consulte os dados do 1º turno com consultar_sql.
+- Feche com "Fonte: TSE, apuração do 2º turno em tempo real (dados das HH:MM)".
+
 Esquema:
 ${ESQUEMA}`,
   tools: {
@@ -132,6 +200,14 @@ ${ESQUEMA}`,
           registrar(null, msg.slice(0, 500));
           return { erro: msg.includes("permission denied") ? "Esses dados não estão disponíveis para consulta." : msg.includes("statement timeout") ? "A consulta demorou demais; tente um recorte menor." : `Erro na consulta: ${msg}` };
         }
+      },
+    }),
+    apuracao_ao_vivo: tool({
+      description: "Apuração do 2º turno em tempo real (presidente: Brasil, projeção e cada UF; governadores do 2º turno). Sem parâmetros.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        try { return await apuracaoAoVivo(); }
+        catch { return { erro: "Apuração indisponível neste momento. Sugira a página Apuração ao vivo do painel." }; }
       },
     }),
     proximas_perguntas: tool({

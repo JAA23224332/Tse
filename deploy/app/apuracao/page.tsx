@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { Resposta } from "@/lib/coletor";
+import type { Governadores } from "@/lib/governadores";
 import { Credito } from "@/app/credito";
 import "./apuracao.css";
 
@@ -110,8 +111,54 @@ export default function Page() {
           {d!.falhas.length > 0 && <p className="muted small">Sem resposta do TSE para: {d!.falhas.join(", ").toUpperCase()}.</p>}
         </>
       )}
+      <Governadores />
       <Credito />
     </main>
+  );
+}
+
+const NOME_UF: Record<string, string> = { AC: "Acre", AM: "Amazonas", DF: "Distrito Federal", ES: "Espírito Santo", RN: "Rio Grande do Norte", TO: "Tocantins" };
+const titulo = (s: string) => s.toLowerCase().replace(/(^|\s)(\p{L})/gu, (_, a, b) => a + b.toUpperCase()).replace(/\b(De|Da|Do|Das|Dos|E)\b/g, (m) => m.toLowerCase());
+
+function Governadores() {
+  const [g, setG] = useState<Governadores | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    const buscar = async () => {
+      try { const r = await fetch("/api/apuracao/governadores", { cache: "no-store" }); if (!r.ok) return; const j = await r.json(); if (vivo && j.ufs) setG(j); } catch {}
+    };
+    buscar();
+    const id = setInterval(buscar, 60_000);
+    return () => { vivo = false; clearInterval(id); };
+  }, []);
+  if (!g || g.ufs.length === 0) return null;
+  const ufs = [...g.ufs].sort((a, b) => a.uf.localeCompare(b.uf));
+  return (
+    <section className="gov">
+      <h2 className="sub">2º turno para governador</h2>
+      <div className="govs">
+        {ufs.map((u) => {
+          const [a, b] = u.candidatos, tot = (a?.votos ?? 0) + (b?.votos ?? 0);
+          const pa = tot ? 100 * a.votos / tot : 0;
+          return (
+            <div key={u.uf} className="card panel">
+              <h3>{NOME_UF[u.uf] ?? u.uf} <span className="muted small">· {u.secoes ? `${pc(u.pst)} apurado` : "aguardando apuração"}{u.final ? " · totalizado" : ""}</span></h3>
+              {[a, b].filter(Boolean).map((c) => (
+                <div key={c.numero} className="gl">
+                  <span>{titulo(c.nome)} <span className="muted small">{c.partido}</span>{c.eleito ? <b className="eleito"> eleito</b> : null}</span>
+                  <b className="num">{tot ? pc(100 * c.votos / tot) : "—"}</b>
+                  <span className="muted small n">{fmt(c.votos)} votos</span>
+                </div>
+              ))}
+              {tot > 0 && <div className="bar gbar"><i style={{ flex: pa }} /><i style={{ flex: 100 - pa }} /></div>}
+              <p className="muted small">TSE {u.dh}</p>
+            </div>
+          );
+        })}
+      </div>
+      {g.falhas.length > 0 && <p className="muted small">Sem resposta do TSE agora para: {g.falhas.join(", ")}.</p>}
+      <p className="muted small">Percentuais sobre os votos dos dois candidatos. Só contagem, sem projeção. O Rio de Janeiro não tem 2º turno de governador publicado pelo TSE.</p>
+    </section>
   );
 }
 
