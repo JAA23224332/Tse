@@ -19,7 +19,7 @@ import pandas as pd
 TURNO = int(os.environ.get("TURNO", "1"))
 T = "dados/tratados"
 CSV = f"{T}/secoes_2026.csv" if TURNO == 1 else f"{T}/secoes_2026_2t.csv"
-OUT = "deploy/public/urna/data"
+OUT = "deploy/public/urna/data" + ("" if TURNO == 1 else f"/{TURNO}t")  # o 2º turno fica em data/2t, ao lado do 1º
 UFS = {"AC": "Acre", "AL": "Alagoas", "AM": "Amazonas", "AP": "Amapá", "BA": "Bahia", "CE": "Ceará", "DF": "Distrito Federal", "ES": "Espírito Santo",
        "GO": "Goiás", "MA": "Maranhão", "MG": "Minas Gerais", "MS": "Mato Grosso do Sul", "MT": "Mato Grosso", "PA": "Pará", "PB": "Paraíba", "PE": "Pernambuco",
        "PI": "Piauí", "PR": "Paraná", "RJ": "Rio de Janeiro", "RN": "Rio Grande do Norte", "RO": "Rondônia", "RR": "Roraima", "RS": "Rio Grande do Sul",
@@ -65,8 +65,12 @@ if __name__ == "__main__":
     }
     print(json.dumps({k: v for k, v in stats.items() if k != "percentis_diferenca"}, ensure_ascii=False))
 
-    if os.path.exists(OUT):
-        shutil.rmtree(OUT)
+    if os.path.exists(OUT):  # só a pasta deste turno: o 1º turno continua publicado enquanto o 2º é gerado
+        for nome in os.listdir(OUT):
+            cam = os.path.join(OUT, nome)
+            if nome.endswith("t") and os.path.isdir(cam):
+                continue  # pasta de outro turno (ex.: 2t dentro de data/)
+            shutil.rmtree(cam) if os.path.isdir(cam) else os.remove(cam)
     gravar(f"{OUT}/stats.json", stats)
 
     # índice: UFs (nome por extenso, Exterior por último) e municípios em ordem alfabética

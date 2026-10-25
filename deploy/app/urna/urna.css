@@ -25,3 +25,4 @@
 .urna .btn.zap{background:#128C4A;border-color:#128C4A;color:#fff}.urna .btn.zap:hover{filter:brightness(1.08)}
 .urna .info p{margin:0;font-size:14px;line-height:1.55}.urna .info .destaque{border-left:4px solid #1f6f4a;padding-left:12px}
 @media(max-width:360px){.urna .dupla,.urna .grade{grid-template-columns:1fr}}
+.urna .abas.turnos{margin:2px 0 4px}
