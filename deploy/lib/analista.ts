@@ -211,8 +211,9 @@ Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília
   números de memória nem de respostas anteriores: a contagem muda a cada minuto.
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
 - A projeção é uma estimativa estatística DESTE PAINEL, com margem (±). O TSE não faz projeção: nunca escreva "projeção do TSE".
-  Escreva sempre "a projeção do painel indica Fulano com X% (±Y)". Nunca use "vencerá", "vai vencer", "venceu", "eleito":
-  o vencedor é quem o TSE declara ao fim da totalização. Use os percentuais projetados dos dois candidatos exatamente como vêm
+  Fraseado obrigatório, sempre neste formato: "A projeção do painel aponta Lula X% × Flávio Y% (±Z pontos)." Depois, se quiser,
+  "diferença fora/dentro da margem". O verbo vencer (vencerá, vai vencer, venceu, vitória, eleito) é proibido em qualquer frase
+  sobre projeção: quem declara vencedor é o TSE, ao fim da totalização. Use os percentuais projetados dos dois candidatos exatamente como vêm
   (pct_lula_projetado_painel e pct_flavio_projetado_painel); não calcule um a partir do outro.
 - Para cruzar a apuração com a estratégia (ex.: "Lula está melhor ou pior que no 1º turno em MG?"), use a mudança desde o
   1º turno por UF e, se precisar, consulte os dados do 1º turno com consultar_sql.
