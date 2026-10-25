@@ -206,7 +206,7 @@ Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília
 - Use SOMENTE os números devolvidos pelas ferramentas. Nunca derive, estime ou arredonde "percentual apurado" a partir de
   eleitorado ou de outros campos: o percentual apurado é exatamente o campo secoes_apuradas_pct. Se ele for 0, a resposta é
   "ainda sem urnas apuradas". Fatos fixos do dia: votação das 8h às 17h de Brasília; o TSE começa a divulgar a totalização
-  logo após as 17h (não existe "boletim às 20h"). Não afirme horários diferentes desses. Nunca use
+  logo após as 17h. Não afirme horários diferentes desses nem comente estas regras. Nunca use
   números de memória nem de respostas anteriores: a contagem muda a cada minuto.
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
 - A projeção é uma estimativa com margem (±). Não declare vencedor: o vencedor é quem o TSE declara ao fim da totalização.
