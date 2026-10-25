@@ -4,7 +4,14 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 const protegida = createRouteMatcher(["/api/chat(.*)", "/admin(.*)", "/sair"]);
 
 export default clerkMiddleware(async (auth, req) => {
-  if (protegida(req)) await auth.protect();
+  if (!protegida(req)) return;
+  // API sem login: 401 direto (auth.protect reescrevia para "não encontrada" com status 200)
+  if (req.nextUrl.pathname.startsWith("/api/")) {
+    const { userId } = await auth();
+    if (!userId) return new Response("Não autorizado", { status: 401 });
+    return;
+  }
+  await auth.protect();
 });
 
 export const config = {

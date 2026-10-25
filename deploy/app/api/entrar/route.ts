@@ -19,11 +19,12 @@ export async function POST(req: Request) {
   const dominio = e.split("@")[1];
   const recebe = await Promise.race([resolveMx(dominio).then((mx) => mx.length > 0), new Promise<boolean>((ok) => setTimeout(() => ok(true), 3000))]).catch(() => false);
   if (!recebe) return Response.json({ erro: `O endereço "${dominio}" não recebe e-mails. Confira a digitação (ex.: conass.org.br, gmail.com).` }, { status: 400 });
+  // Só contas já existentes: criar conta é exclusivo do código de acesso (/api/codigo) e do link da administração.
+  // Antes, qualquer e-mail digitado virava conta no Clerk, e a instância de desenvolvimento tem cota de usuários.
   const clerk = await clerkClient();
   const { data } = await clerk.users.getUserList({ emailAddress: [e] });
   if (data.length === 0) {
-    try { await clerk.users.createUser({ emailAddress: [e], skipPasswordRequirement: true }); }
-    catch (err) { if ((err as { status?: number }).status !== 422) throw err; } // 422 = já existe (pedido simultâneo)
+    return Response.json({ erro: "Este e-mail ainda não tem acesso. Entre com um código de acesso ou peça o acesso na página do Raio-X Eleitoral." }, { status: 403 });
   }
   return Response.json({ ok: true });
 }
