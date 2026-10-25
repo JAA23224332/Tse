@@ -107,6 +107,35 @@ async function apuracaoAoVivo() {
   return { consultado_em: new Date().toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" }), presidente, governadores_2turno: governadores };
 }
 
+/** Apuração municipal ao vivo: lista da UF (nome, eleitorado, % apurado, 1º turno) e, se pedido, o arquivo do município no TSE. */
+const semAcento = (x: string) => x.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
+async function apuracaoMunicipio(uf: string, municipio?: string) {
+  const u = uf.trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(u)) return { erro: "Informe a UF com duas letras." };
+  const r = await fetch(`${SITE}/api/apuracao/uf/${u}`, { cache: "no-store", signal: AbortSignal.timeout(20000) });
+  if (!r.ok) return { erro: "Sem resposta para essa UF agora." };
+  const j = (await r.json()) as { dh: string; municipios: { cd: string; nome: string; eleitorado: number; pst: number; secoes: number; lula1: number; flavio1: number }[] };
+  const resumoUF = { uf: u.toUpperCase(), horario_dados_tse: j.dh, municipios: j.municipios.length, municipios_com_urnas_apuradas: j.municipios.filter((m) => m.secoes > 0).length,
+    maiores: j.municipios.slice(0, 15).map((m) => ({ municipio: m.nome, eleitorado: m.eleitorado, secoes_apuradas_pct: um(m.pst), pct_lula_1turno: m.lula1 + m.flavio1 ? um(100 * m.lula1 / (m.lula1 + m.flavio1)) : null })) };
+  if (!municipio) return resumoUF;
+  const alvo = semAcento(municipio);
+  const m = j.municipios.find((x) => semAcento(x.nome) === alvo) ?? j.municipios.find((x) => semAcento(x.nome).includes(alvo));
+  if (!m) return { erro: `Município "${municipio}" não encontrado em ${u.toUpperCase()}.`, sugestoes: j.municipios.filter((x) => semAcento(x.nome).includes(alvo.slice(0, 4))).slice(0, 5).map((x) => x.nome) };
+  const t = await fetch(`https://resultados.tse.jus.br/oficial/ele2026/6258/dados/${u}/${u}${m.cd}-c0001-e006258-u.json`, { cache: "no-store", signal: AbortSignal.timeout(10000), headers: { "user-agent": "Mozilla/5.0 (apuracao segundoturno.blog)" } }).catch(() => null);
+  if (!t?.ok) return { municipio: m.nome, uf: u.toUpperCase(), erro: "TSE não respondeu para este município agora.", primeiro_turno: { lula: m.lula1, flavio: m.flavio1 } };
+  const d = (await t.json()) as { dg?: string; hg?: string; s?: Record<string, string>; e?: Record<string, string>; v?: Record<string, string>; carg?: { agr?: { par?: { cand?: { n: string; vap: string }[] }[] }[] }[] };
+  const n = (x: unknown) => Number(String(x ?? "0").replace(",", ".")) || 0;
+  let lula = 0, flavio = 0;
+  for (const a of d.carg?.[0]?.agr ?? []) for (const p of a.par ?? []) for (const c of p.cand ?? []) { if (c.n === "13") lula += n(c.vap); if (c.n === "22") flavio += n(c.vap); }
+  const tot = lula + flavio, t1 = m.lula1 + m.flavio1;
+  return { municipio: m.nome, uf: u.toUpperCase(), eleitorado: m.eleitorado, horario_dados_tse: `${d.dg ?? ""} ${d.hg ?? ""}`.trim(),
+    secoes_apuradas_pct: um(n(d.s?.pstn)), situacao: n(d.s?.st) > 0 ? "em apuração" : "ainda sem urnas apuradas",
+    segundo_turno_agora: tot ? { votos_lula: lula, votos_flavio: flavio, pct_lula: um(100 * lula / tot), pct_flavio: um(100 * flavio / tot), diferenca: Math.abs(lula - flavio), quem_lidera: lula > flavio ? "Lula" : flavio > lula ? "Flávio Bolsonaro" : "empate",
+      brancos: n(d.v?.vb), nulos: n(d.v?.tvn), abstencao_pct_ate_agora: n(d.e?.te) ? um(100 * (1 - n(d.e?.c) / n(d.e?.te))) : null } : null,
+    primeiro_turno: { votos_lula: m.lula1, votos_flavio: m.flavio1, pct_lula: t1 ? um(100 * m.lula1 / t1) : null },
+    mudanca_desde_1turno_pontos: tot && t1 ? um(100 * lula / tot - 100 * m.lula1 / t1) : null };
+}
+
 /** Contexto de quem pergunta, usado só para auditoria das consultas. */
 export type ContextoAnalista = { email: string | null; userId: string };
 
@@ -128,7 +157,7 @@ export function criarAnalista(context: ContextoAnalista) {
     stopWhen: [stepCountIs(20), hasToolCall("proximas_perguntas")],
   // O modelo às vezes ignora a instrução e responde de memória (testado em 25/10: números e municípios inventados).
   // Primeiro passo obrigatoriamente consulta os dados ou a apuração; depois ele decide sozinho.
-  prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: "required", activeTools: ["consultar_sql", "apuracao_ao_vivo"] } : undefined),
+  prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: "required", activeTools: ["consultar_sql", "apuracao_ao_vivo", "apuracao_municipio"] } : undefined),
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
@@ -168,7 +197,9 @@ Como trabalhar:
 
 Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília):
 - Para qualquer pergunta sobre o resultado do 2º turno, quem está na frente, quanto já foi apurado, a projeção, um estado
-  na apuração ou os governadores do 2º turno (AC, AM, DF, ES, RN, TO), chame apuracao_ao_vivo ANTES de responder. Nunca use
+  na apuração ou os governadores do 2º turno (AC, AM, DF, ES, RN, TO), chame apuracao_ao_vivo ANTES de responder.
+  Para um município específico na apuração ("como está Ipameri agora?", "quais cidades de GO já apuraram mais?"), chame
+  apuracao_municipio com a UF (e o nome do município). É o menor nível que o TSE divulga em tempo real; por seção só dias depois. Nunca use
   números de memória nem de respostas anteriores: a contagem muda a cada minuto.
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
 - A projeção é uma estimativa com margem (±). Não declare vencedor: o vencedor é quem o TSE declara ao fim da totalização.
@@ -211,6 +242,14 @@ ${ESQUEMA}`,
       execute: async () => {
         try { return await apuracaoAoVivo(); }
         catch { return { erro: "Apuração indisponível neste momento. Sugira a página Apuração ao vivo do painel." }; }
+      },
+    }),
+    apuracao_municipio: tool({
+      description: "Apuração do 2º turno em tempo real por município: dado uf (e opcionalmente municipio), devolve os maiores municípios da UF com % apurado e, para o município pedido, votos e percentuais agora, mais o 1º turno para comparar.",
+      inputSchema: z.object({ uf: z.string().describe("Sigla da UF, ex.: GO"), municipio: z.string().optional().describe("Nome do município, ex.: Ipameri") }),
+      execute: async ({ uf, municipio }) => {
+        try { return await apuracaoMunicipio(uf, municipio); }
+        catch { return { erro: "Apuração municipal indisponível neste momento." }; }
       },
     }),
     proximas_perguntas: tool({
