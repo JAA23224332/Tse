@@ -207,7 +207,7 @@ export function Urna() {
       {corpo}
 
       <div className="panel info">
-        <p className="destaque"><b>Domingo, 25 de outubro, das 8h às 17h (horário de Brasília).</b> Serve qualquer documento oficial com foto; o título não é obrigatório. Ônibus de graça nos dois turnos. Você pode levar sua família no seu carro (Lei 6.091/1974, art. 5º). Celular fica com o mesário.</p>
+        <p className="destaque"><b>Domingo, 25 de outubro, das 8h às 17h (horário de Brasília).</b> Serve qualquer documento oficial com foto; o título não é obrigatório. Em muitas cidades o ônibus é de graça no dia da eleição: confira na sua. Você pode levar sua família no seu carro (Lei 6.091/1974, art. 5º). Celular fica com o mesário.</p>
         {stats && <p><b>A urna média do Brasil no {stats.eleicao}:</b> {fmt(stats.media.aptos)} eleitores, {fmt(stats.media.abstencao)} ficaram em casa, Flávio {fmt(stats.media.flavio)}, Lula {fmt(stats.media.lula)}, outros {fmt(stats.media.outros)}, branco e nulo {fmt(stats.media.branco_nulo)}. Diferença de {fmt(Math.abs(stats.media.lula - stats.media.flavio))} votos. {fmt(stats.empates)} urnas empataram; em {fmt(stats.diferenca_ate_5)} a diferença foi de 5 votos ou menos; em {stats.abstencao_maior_que_diferenca.pct}% das urnas, quem ficou em casa era mais gente que a diferença.</p>}
         <p className="small muted">Fonte: TSE, dados abertos, "Votação por seção eleitoral" e "Eleitorado por local de votação", presidente, {stats?.eleicao ?? ""} ({stats?.data ?? ""}). Sem as seções do exterior{stats ? `: soma Flávio ${fmt(stats.total_flavio)}, Lula ${fmt(stats.total_lula)}` : ""}. Esta página não pede nome nem telefone e não guarda nada.</p>
       </div>
