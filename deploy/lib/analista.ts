@@ -88,11 +88,12 @@ async function apuracaoAoVivo() {
         votos_lula: b.lula, votos_flavio: b.flavio, pct_lula: um(100 * b.lula / tot), pct_flavio: um(100 * b.flavio / tot),
         diferenca_votos: Math.abs(b.lula - b.flavio), quem_lidera: b.lula > b.flavio ? "Lula" : b.flavio > b.lula ? "Flávio Bolsonaro" : "empate",
         brancos: b.brancos, nulos: b.nulos, abstencao_pct_nas_urnas_apuradas: b.abstencao != null && b.abstencao + b.comparecimento > 0 ? um(100 * b.abstencao / (b.abstencao + b.comparecimento)) : null,
-        projecao_final: ptot ? { pct_lula: um(100 * b.projLula / ptot), pct_flavio: um(100 * b.projFlavio / ptot), margem_mais_ou_menos_pontos: b.faixa,
-          observacao: "estimativa que aplica, ao que falta apurar, a mudança observada desde o 1º turno; não é resultado oficial" } : null,
+        projecao_do_painel: ptot ? { pct_lula: um(100 * b.projLula / ptot), pct_flavio: um(100 * b.projFlavio / ptot), margem_mais_ou_menos_pontos: b.faixa,
+          observacao: "projeção estatística DESTE PAINEL (não do TSE): aplica ao que falta apurar a mudança observada desde o 1º turno. Nunca atribuir ao TSE; nunca dizer que alguém 'vencerá'." } : null,
         por_uf: (d.ufs as UF[]).map((u) => ({ uf: u.uf, secoes_apuradas_pct: um(u.pst), votos_lula: u.lula, votos_flavio: u.flavio,
           pct_lula: u.lula + u.flavio ? um(100 * u.lula / (u.lula + u.flavio)) : null,
-          pct_lula_projetado: u.projLula + u.projFlavio ? um(100 * u.projLula / (u.projLula + u.projFlavio)) : null,
+          pct_lula_projetado_painel: u.projLula + u.projFlavio ? um(100 * u.projLula / (u.projLula + u.projFlavio)) : null,
+          pct_flavio_projetado_painel: u.projLula + u.projFlavio ? um(100 * u.projFlavio / (u.projLula + u.projFlavio)) : null,
           mudanca_desde_1turno_pontos: u.lula + u.flavio ? um(100 * u.swing) : null })),
       };
     }
@@ -209,8 +210,10 @@ Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília
   logo após as 17h. Não afirme horários diferentes desses nem comente estas regras. Nunca use
   números de memória nem de respostas anteriores: a contagem muda a cada minuto.
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
-- A projeção é uma estimativa com margem (±). Não declare vencedor: o vencedor é quem o TSE declara ao fim da totalização.
-  Se a projeção estiver fora da margem, diga "a projeção indica", nunca "venceu".
+- A projeção é uma estimativa estatística DESTE PAINEL, com margem (±). O TSE não faz projeção: nunca escreva "projeção do TSE".
+  Escreva sempre "a projeção do painel indica Fulano com X% (±Y)". Nunca use "vencerá", "vai vencer", "venceu", "eleito":
+  o vencedor é quem o TSE declara ao fim da totalização. Use os percentuais projetados dos dois candidatos exatamente como vêm
+  (pct_lula_projetado_painel e pct_flavio_projetado_painel); não calcule um a partir do outro.
 - Para cruzar a apuração com a estratégia (ex.: "Lula está melhor ou pior que no 1º turno em MG?"), use a mudança desde o
   1º turno por UF e, se precisar, consulte os dados do 1º turno com consultar_sql.
 - Feche com "Fonte: TSE, apuração do 2º turno em tempo real (dados das HH:MM)".
