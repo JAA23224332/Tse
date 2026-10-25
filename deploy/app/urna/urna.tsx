@@ -131,7 +131,7 @@ export function Urna() {
         {modo === "escola" && <p className="nota">Soma de {linhasEscola.length} seções desta escola.</p>}
         <span className="rotulo">Diferença entre {lider ? `${lider} e ${outro}` : "Lula e Flávio"} {modo === "secao" ? "nesta urna" : "nesta escola"}, no {stats.eleicao}</span>
         <b className="grande">{dif === 0 ? "Empate" : dif === 1 ? "1 voto" : `${fmt(dif)} votos`}</b>
-        <span className="sub">{lider ? `${lider} na frente.` : "Empate. Um único voto a mais decidiria esta urna."}{dif > 0 && ` Mais apertada que ${maisApertada}% das urnas do Brasil.`}</span>
+        <span className="sub">{lider ? `${lider} na frente.` : "Empate. Um único voto a mais decidiria esta urna."}{dif > 0 && modo === "secao" && ` Mais apertada que ${maisApertada}% das urnas do Brasil.`}</span>
         <div className="barra" role="img" aria-label={`Lula ${pct(nums.lula).toFixed(0)}%, Flávio ${pct(nums.flavio).toFixed(0)}%, outros e brancos ou nulos ${pct(nums.outros + nums.branco_nulo).toFixed(0)}%, ficaram em casa ${pct(nums.abstencao).toFixed(0)}% dos aptos`}>
           <i style={{ width: `${pct(nums.lula)}%`, background: "var(--lula)" }} /><i style={{ width: `${pct(nums.flavio)}%`, background: "var(--flavio)" }} /><i style={{ width: `${pct(nums.outros + nums.branco_nulo)}%`, background: "var(--ink-3)" }} />
         </div>
