@@ -24,7 +24,7 @@ const titulo = (s: string) => s.toLowerCase().replace(/(^|[\s(\/-])(\p{L})/gu, (
 const soma = (ls: Linha[]): Numeros => ls.reduce((a, l) => ({ aptos: a.aptos + l[2], lula: a.lula + l[3], flavio: a.flavio + l[4], outros: a.outros + l[5], branco_nulo: a.branco_nulo + l[6], abstencao: a.abstencao + l[7] }),
   { aptos: 0, lula: 0, flavio: 0, outros: 0, branco_nulo: 0, abstencao: 0 });
 const pasta = (t: Turno) => `/urna/data${t === 2 ? "/2t" : ""}`;
-type AoVivo = { pst: number; secoes: number; secoesTot: number; lula: number; flavio: number; brancos: number; nulos: number; comparecimento: number; aptos: number; dh: string };
+type AoVivo = { pst: number; secoes: number; secoesTot: number; lula: number; flavio: number; brancos: number; nulos: number; comparecimento: number; abstencao: number; aptos: number; dh: string };
 const n = (x: unknown) => Number(String(x ?? "0").replace(",", ".")) || 0;
 /** Resultado municipal do 2º turno direto do TSE (o portal libera CORS); uma leitura por minuto por visitante. */
 async function lerAoVivo(uf: string, cd: string): Promise<AoVivo | null> {
@@ -35,7 +35,7 @@ async function lerAoVivo(uf: string, cd: string): Promise<AoVivo | null> {
   if (String(d.ele) !== "6258") return null;
   let lula = 0, flavio = 0;
   for (const a of d.carg?.[0]?.agr ?? []) for (const p of a.par ?? []) for (const c of p.cand ?? []) { if (c.n === "13") lula += n(c.vap); if (c.n === "22") flavio += n(c.vap); }
-  return { pst: n(d.s?.pstn), secoes: n(d.s?.st), secoesTot: n(d.s?.ts), lula, flavio, brancos: n(d.v?.vb), nulos: n(d.v?.tvn), comparecimento: n(d.e?.c), aptos: n(d.e?.te), dh: `${d.dg ?? ""} ${d.hg ?? ""}`.trim() };
+  return { pst: n(d.s?.pstn), secoes: n(d.s?.st), secoesTot: n(d.s?.ts), lula, flavio, brancos: n(d.v?.vb), nulos: n(d.v?.tvn), comparecimento: n(d.e?.c), abstencao: n(d.e?.a), aptos: n(d.e?.te), dh: `${d.dg ?? ""} ${d.hg ?? ""}`.trim() };
 }
 const cache = new Map<string, Promise<Mun>>();
 const carregarMun = (t: Turno, uf: string, cd: string) => {
@@ -240,7 +240,7 @@ export function Urna() {
               <span className="rot"><span className="ao" aria-hidden="true" />2º turno agora · {av.pst.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% das urnas da cidade apuradas · TSE {av.dh}</span>
               <div className="duo"><b className="lula">{(100 * av.lula / avTot).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</b><b className="flavio">{(100 * av.flavio / avTot).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</b></div>
               <div className="barra"><i style={{ width: `${100 * av.lula / avTot}%`, background: "var(--lula)" }} /><i style={{ width: `${100 * av.flavio / avTot}%`, background: "var(--flavio)" }} /></div>
-              <span className="small muted">Lula {fmt(av.lula)} · Flávio {fmt(av.flavio)} · diferença {fmt(Math.abs(av.lula - av.flavio))} · brancos e nulos {fmt(av.brancos + av.nulos)}{av.aptos ? ` · abstenção até agora ${(100 * (1 - av.comparecimento / av.aptos)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : ""}. Atualiza a cada minuto.</span>
+              <span className="small muted">Lula {fmt(av.lula)} · Flávio {fmt(av.flavio)} · diferença {fmt(Math.abs(av.lula - av.flavio))} · brancos e nulos {fmt(av.brancos + av.nulos)}{av.abstencao + av.comparecimento > 0 ? ` · abstenção nas urnas apuradas ${(100 * av.abstencao / (av.abstencao + av.comparecimento)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : ""}. Atualiza a cada minuto.</span>
             </div>
           ) : (
             <p className="nota">{agora && agora >= FECHAMENTO_2T ? "A contagem do 2º turno desta cidade aparece aqui, ao vivo, assim que o TSE totalizar as primeiras urnas." : "Hoje à noite, a partir das 17h, a contagem do 2º turno desta cidade aparece aqui ao vivo. Por seção e por escola, o TSE publica dias depois."}</p>

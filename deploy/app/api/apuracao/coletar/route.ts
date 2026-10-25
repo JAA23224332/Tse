@@ -12,13 +12,13 @@ const igual = (a: string, b: string) => a.length === b.length && timingSafeEqual
 const N = z.number().finite().min(0).max(2e8);
 const UF = z.object({
   uf: z.enum(UFS.map((u) => u.toUpperCase()) as [string, ...string[]]), dh: z.string().max(40), pst: z.number().min(0).max(100),
-  secoes: N, secoesTot: N, lula: N, flavio: N, validos: N, brancos: N, nulos: N, comparecimento: N, eleitorado: N,
+  secoes: N, secoesTot: N, lula: N, flavio: N, validos: N, brancos: N, nulos: N, comparecimento: N, eleitorado: N, abstencao: N.optional(),
   apurados: N, eleitoradoApurado: N, fracaoApurada: z.number().min(0).max(1), projLula: N, projFlavio: N,
   swing: z.number().min(-0.25).max(0.25), swingConfiavel: z.boolean(), desatualizada: z.boolean().optional(),
 }).strict();
 const Snapshot = z.object({
   atualizado: z.string().datetime(), eleicao: z.literal(6258), falhas: z.array(z.string().max(2)).max(28), ufs: z.array(UF).max(28),
-  brasil: z.object({ lula: N, flavio: N, validos: N, brancos: N, nulos: N, comparecimento: N, eleitorado: N, pst: z.number().min(0).max(100),
+  brasil: z.object({ lula: N, flavio: N, validos: N, brancos: N, nulos: N, comparecimento: N, eleitorado: N, abstencao: N.optional(), pst: z.number().min(0).max(100),
     secoes: N, secoesTot: N, dh: z.string().max(40), projLula: N.nullable(), projFlavio: N.nullable(), faixa: z.number().min(0).max(20).nullable() }).strict(),
 }).strict();
 

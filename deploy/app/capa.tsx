@@ -110,7 +110,7 @@ export function Capa() {
                 <div className="cand flavio"><b>{pc(100 - contLula)}</b><span><strong>Flávio Bolsonaro</strong> · {fmt(b.flavio)} votos</span></div>
               </div>
               <div className="bar"><i style={{ flex: b.lula || 1 }} /><i style={{ flex: b.flavio || 1 }} /></div>
-              <div className="kv"><span>Diferença <b>{fmt(Math.abs(b.lula - b.flavio))}</b> votos</span><span>Abstenção <b>{b.eleitorado ? pc(100 * (1 - b.comparecimento / b.eleitorado)) : "—"}</b></span><span>Brancos e nulos <b>{fmt(b.brancos + b.nulos)}</b></span><span>TSE <b>{b.dh}</b></span></div>
+              <div className="kv"><span>Diferença <b>{fmt(Math.abs(b.lula - b.flavio))}</b> votos</span><span>Abstenção <b>{(b.abstencao != null && b.abstencao + b.comparecimento > 0 ? pc(100 * b.abstencao / (b.abstencao + b.comparecimento)) : "—")}</b></span><span>Brancos e nulos <b>{fmt(b.brancos + b.nulos)}</b></span><span>TSE <b>{b.dh}</b></span></div>
               {manchete && <p className="manchete">{manchete}</p>}
               {temProj && !fim && (
                 <div className={"proj" + (empate ? " empate" : "")}>

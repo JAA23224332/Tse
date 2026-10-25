@@ -26,13 +26,13 @@ const SWING_MAX = 0.25;        // limite do swing (fração dos válidos)
 export type Base = Record<string, { uf: string; eleitorado: number; validos: number; lula: number; flavio: number; nome: string }>;
 export type ParcialUF = {
   uf: string; dh: string; pst: number; secoes: number; secoesTot: number;
-  lula: number; flavio: number; validos: number; brancos: number; nulos: number; comparecimento: number; eleitorado: number;
+  lula: number; flavio: number; validos: number; brancos: number; nulos: number; comparecimento: number; eleitorado: number; abstencao?: number;
   apurados: number; eleitoradoApurado: number; fracaoApurada: number;
   projLula: number; projFlavio: number; swing: number; swingConfiavel: boolean;
   desatualizada?: boolean;
 };
 export type Brasil = {
-  lula: number; flavio: number; validos: number; brancos: number; nulos: number; comparecimento: number; eleitorado: number;
+  lula: number; flavio: number; validos: number; brancos: number; nulos: number; comparecimento: number; eleitorado: number; abstencao?: number;
   pst: number; secoes: number; secoesTot: number; dh: string;
   projLula: number | null; projFlavio: number | null; faixa: number | null; // faixa em pontos percentuais (±)
 };
@@ -108,7 +108,7 @@ export function lerUF(uf: string, parcial: Parcial, andamento: Andamento, base: 
   return {
     uf: uf.toUpperCase(), dh: `${parcial.dg ?? ""} ${parcial.hg ?? ""}`.trim(),
     pst: n(s.pstn), secoes: n(s.st), secoesTot: n(s.ts),
-    lula, flavio, validos: n(v.vvc), brancos: n(v.vb), nulos: n(v.tvn), comparecimento: n(e.c), eleitorado: n(e.te),
+    lula, flavio, validos: n(v.vvc), brancos: n(v.vb), nulos: n(v.tvn), comparecimento: n(e.c), eleitorado: n(e.te), abstencao: n(e.a),
     municipios,
   };
 }
@@ -212,13 +212,13 @@ export async function apurar(ciclo: string, eleicao: number, cargo: number, numL
   let brasil: Brasil;
   if (nacional.status === "fulfilled") {
     const p = nacional.value, { lula, flavio } = votos(p, numLula, numFlavio, eleicao), v = p.v ?? {}, e = p.e ?? {}, s = p.s ?? {};
-    brasil = { lula, flavio, validos: n(v.vvc), brancos: n(v.vb), nulos: n(v.tvn), comparecimento: n(e.c), eleitorado: n(e.te),
+    brasil = { lula, flavio, validos: n(v.vvc), brancos: n(v.vb), nulos: n(v.tvn), comparecimento: n(e.c), eleitorado: n(e.te), abstencao: n(e.a),
       pst: n(s.pstn), secoes: n(s.st), secoesTot: n(s.ts), dh: `${p.dg ?? ""} ${p.hg ?? ""}`.trim(), projLula, projFlavio, faixa };
   } else {
     console.error("apuracao br:", (nacional.reason as Error).message);
     const secoes = soma("secoes"), secoesTot = soma("secoesTot");
     brasil = { lula: soma("lula"), flavio: soma("flavio"), validos: soma("validos"), brancos: soma("brancos"), nulos: soma("nulos"),
-      comparecimento: soma("comparecimento"), eleitorado: soma("eleitorado"), pst: secoesTot ? (100 * secoes) / secoesTot : 0, secoes, secoesTot,
+      comparecimento: soma("comparecimento"), eleitorado: soma("eleitorado"), abstencao: soma("abstencao"), pst: secoesTot ? (100 * secoes) / secoesTot : 0, secoes, secoesTot,
       dh: ufs[0]?.dh ?? "", projLula, projFlavio, faixa };
   }
   return { atualizado: new Date().toISOString(), eleicao, falhas, ufs: ufs.sort((a, b) => b.eleitorado - a.eleitorado), brasil };

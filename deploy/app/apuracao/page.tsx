@@ -70,7 +70,7 @@ export default function Page() {
                 <div style={{ textAlign: "right" }}><b className="flavio">{pc(100 - contLula)}</b><span>Flávio Bolsonaro · {fmt(b.flavio)} votos</span></div>
               </div>
               <div className="bar"><i style={{ flex: b.lula }} /><i style={{ flex: b.flavio }} /></div>
-              <div className="kv"><span>Diferença <b>{fmt(Math.abs(b.lula - b.flavio))}</b></span><span>Brancos <b>{fmt(b.brancos)}</b></span><span>Nulos <b>{fmt(b.nulos)}</b></span><span>Abstenção <b>{b.eleitorado ? pc(100 * (1 - b.comparecimento / b.eleitorado)) : "—"}</b></span></div>
+              <div className="kv"><span>Diferença <b>{fmt(Math.abs(b.lula - b.flavio))}</b></span><span>Brancos <b>{fmt(b.brancos)}</b></span><span>Nulos <b>{fmt(b.nulos)}</b></span><span>Abstenção <b>{(b.abstencao != null && b.abstencao + b.comparecimento > 0 ? pc(100 * b.abstencao / (b.abstencao + b.comparecimento)) : "—")}</b></span></div>
               <p className="muted small">Percentuais sobre os votos dos dois candidatos (sem brancos e nulos). TSE {b.dh}.</p>
             </div>
             <div className="card panel proj">

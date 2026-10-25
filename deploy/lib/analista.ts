@@ -87,7 +87,7 @@ async function apuracaoAoVivo() {
         horario_dados_tse: b.dh, secoes_apuradas_pct: um(b.pst),
         votos_lula: b.lula, votos_flavio: b.flavio, pct_lula: um(100 * b.lula / tot), pct_flavio: um(100 * b.flavio / tot),
         diferenca_votos: Math.abs(b.lula - b.flavio), quem_lidera: b.lula > b.flavio ? "Lula" : b.flavio > b.lula ? "Flávio Bolsonaro" : "empate",
-        brancos: b.brancos, nulos: b.nulos, abstencao_pct: b.eleitorado ? um(100 * (1 - b.comparecimento / b.eleitorado)) : null,
+        brancos: b.brancos, nulos: b.nulos, abstencao_pct_nas_urnas_apuradas: b.abstencao != null && b.abstencao + b.comparecimento > 0 ? um(100 * b.abstencao / (b.abstencao + b.comparecimento)) : null,
         projecao_final: ptot ? { pct_lula: um(100 * b.projLula / ptot), pct_flavio: um(100 * b.projFlavio / ptot), margem_mais_ou_menos_pontos: b.faixa,
           observacao: "estimativa que aplica, ao que falta apurar, a mudança observada desde o 1º turno; não é resultado oficial" } : null,
         por_uf: (d.ufs as UF[]).map((u) => ({ uf: u.uf, secoes_apuradas_pct: um(u.pst), votos_lula: u.lula, votos_flavio: u.flavio,
@@ -133,7 +133,7 @@ async function apuracaoMunicipio(uf: string, municipio?: string) {
   return { municipio: m.nome, uf: u.toUpperCase(), eleitorado: m.eleitorado, horario_dados_tse: `${d.dg ?? ""} ${d.hg ?? ""}`.trim(),
     secoes_apuradas_pct: um(n(d.s?.pstn)), situacao: n(d.s?.st) > 0 ? "em apuração" : "ainda sem urnas apuradas",
     segundo_turno_agora: tot ? { votos_lula: lula, votos_flavio: flavio, pct_lula: um(100 * lula / tot), pct_flavio: um(100 * flavio / tot), diferenca: Math.abs(lula - flavio), quem_lidera: lula > flavio ? "Lula" : flavio > lula ? "Flávio Bolsonaro" : "empate",
-      brancos: n(d.v?.vb), nulos: n(d.v?.tvn), abstencao_pct_ate_agora: n(d.e?.te) ? um(100 * (1 - n(d.e?.c) / n(d.e?.te))) : null } : null,
+      brancos: n(d.v?.vb), nulos: n(d.v?.tvn), abstencao_pct_nas_urnas_apuradas: n(d.e?.a) + n(d.e?.c) > 0 ? um(100 * n(d.e?.a) / (n(d.e?.a) + n(d.e?.c))) : null } : null,
     primeiro_turno: { votos_lula: m.lula1, votos_flavio: m.flavio1, pct_lula: t1 ? um(100 * m.lula1 / t1) : null },
     mudanca_desde_1turno_pontos: tot && t1 ? um(100 * lula / tot - 100 * m.lula1 / t1) : null };
 }

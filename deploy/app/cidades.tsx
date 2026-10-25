@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
  * de cada um a cada minuto, lida direto do TSE pelo navegador (o portal libera CORS). Lista fica no navegador.
  */
 export type Cidade = { uf: string; cd: string; nome: string };
-type AoVivo = { pst: number; secoes: number; secoesTot: number; lula: number; flavio: number; brancos: number; nulos: number; comparecimento: number; aptos: number; dh: string };
+type AoVivo = { pst: number; secoes: number; secoesTot: number; lula: number; flavio: number; brancos: number; nulos: number; comparecimento: number; abstencao: number; aptos: number; dh: string };
 type MunUF = { cd: string; nome: string; eleitorado: number; pst: number; secoes: number; secoesTot: number; lula1: number; flavio1: number };
 type Indice = { ufs: { sg: string; nome: string; municipios: [string, string][] }[] };
 
@@ -25,7 +25,7 @@ export async function lerAoVivo(uf: string, cd: string): Promise<AoVivo | null> 
   if (String(d.ele) !== "6258") return null;
   let lula = 0, flavio = 0;
   for (const a of d.carg?.[0]?.agr ?? []) for (const p of a.par ?? []) for (const c of p.cand ?? []) { if (c.n === "13") lula += n(c.vap); if (c.n === "22") flavio += n(c.vap); }
-  return { pst: n(d.s?.pstn), secoes: n(d.s?.st), secoesTot: n(d.s?.ts), lula, flavio, brancos: n(d.v?.vb), nulos: n(d.v?.tvn), comparecimento: n(d.e?.c), aptos: n(d.e?.te), dh: `${d.dg ?? ""} ${d.hg ?? ""}`.trim() };
+  return { pst: n(d.s?.pstn), secoes: n(d.s?.st), secoesTot: n(d.s?.ts), lula, flavio, brancos: n(d.v?.vb), nulos: n(d.v?.tvn), comparecimento: n(d.e?.c), abstencao: n(d.e?.a), aptos: n(d.e?.te), dh: `${d.dg ?? ""} ${d.hg ?? ""}`.trim() };
 }
 
 const cacheUF = new Map<string, Promise<MunUF[]>>();
@@ -63,7 +63,7 @@ export function CartaoCidade({ c, onRemover }: { c: Cidade; onRemover?: () => vo
         <>
           <div className="cid-pl"><b className="lula">{pc(pl)}</b><span className="muted small">{pc(v.pst, 0)} apurado</span><b className="flavio">{pc(100 - pl)}</b></div>
           <div className="bar"><i style={{ flex: v.lula }} /><i style={{ flex: v.flavio }} /></div>
-          <span className="small muted">Lula {fmt(v.lula)} · Flávio {fmt(v.flavio)} · dif. {fmt(Math.abs(v.lula - v.flavio))}{v.aptos ? ` · abst. ${pc(100 * (1 - v.comparecimento / v.aptos), 0)}` : ""}</span>
+          <span className="small muted">Lula {fmt(v.lula)} · Flávio {fmt(v.flavio)} · dif. {fmt(Math.abs(v.lula - v.flavio))}{v.abstencao + v.comparecimento > 0 ? ` · abst. ${pc(100 * v.abstencao / (v.abstencao + v.comparecimento), 0)}` : ""}</span>
           {swing != null && <span className={"small " + (swing > 0 ? "lula" : swing < 0 ? "flavio" : "muted")}>{swing > 0 ? "+" : ""}{swing.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} pontos para Lula desde o 1º turno ({pc(pl1!)})</span>}
         </>
       ) : (
