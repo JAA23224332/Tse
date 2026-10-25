@@ -30,8 +30,13 @@ const carregarMun = (t: Turno, uf: string, cd: string) => {
   if (!cache.has(k)) cache.set(k, fetch(`${pasta(t)}/mun/${uf}/${cd}.json`).then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json() as Promise<Mun>; }));
   return cache.get(k)!;
 };
-const votosDe = (m: Mun | null, modo: "secao" | "escola", zona: string, secao: string, escola: string): { nums: Numeros | null; agregadaDe: number; local: string; n: number } => {
+type Modo = "secao" | "escola" | "cidade";
+const votosDe = (m: Mun | null, modo: Modo, zona: string, secao: string, escola: string): { nums: Numeros | null; agregadaDe: number; local: string; n: number } => {
   if (!m) return { nums: null, agregadaDe: 0, local: "", n: 0 };
+  if (modo === "cidade") {
+    const ls = Object.values(m.zonas).flat().filter((x) => !x[8]);
+    return { nums: ls.length ? soma(ls) : null, agregadaDe: 0, local: "", n: ls.length };
+  }
   if (modo === "secao") {
     const l = zona && secao ? m.zonas[zona]?.find((x) => String(x[0]) === secao) ?? null : null;
     if (!l) return { nums: null, agregadaDe: 0, local: "", n: 0 };
@@ -78,7 +83,14 @@ export function Urna() {
         const q = new URLSearchParams(window.location.search);
         const t: Turno = !s2 ? 1 : q.get("t") === "1" ? 1 : 2; // com o 2º turno publicado, ele é o padrão
         setTurno(t);
-        const u = q.get("u"), e = q.get("e");
+        const u = q.get("u"), e = q.get("e"), c = q.get("c");
+        const pc = (c ?? "").split("-");
+        if (!u && !e && pc.length === 2 && /^[A-Z]{2}$/.test(pc[0])) {
+          const m = await carregarMun(t, pc[0], pc[1]).catch(() => null);
+          if (!m) { setAviso("Não encontramos essa cidade. Escolha abaixo."); return; }
+          setUf(pc[0]); setCd(pc[1]); setCidade(m.nome); setMun({ [t]: m });
+          return;
+        }
         const p = (u ?? e ?? "").split("-");
         if (p.length === 4 && /^[A-Z]{2}$/.test(p[0])) {
           const m = await carregarMun(t, p[0], p[1]).catch(() => null);
@@ -128,18 +140,21 @@ export function Urna() {
   const st = stats[turno] ?? null;
   const zonas = m ? Object.keys(m.zonas).sort((a, b) => Number(a) - Number(b)) : [];
   const escolas = useMemo(() => m ? Object.entries(m.locais).map(([id, [nome, end, bairro]]) => ({ id, nome, end, bairro, zona: id.split("-")[0] })).sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")) : [], [m]);
-  const atual = votosDe(m, modo, zona, secao, escola);
+  const escolhido = votosDe(m, modo, zona, secao, escola);
+  const vmodo: Modo = escolhido.nums ? modo : "cidade"; // sem zona/seção/escola escolhida, mostra a cidade inteira
+  const atual = escolhido.nums ? escolhido : votosDe(m, "cidade", zona, secao, escola);
   const outroTurno: Turno = turno === 1 ? 2 : 1;
-  const outro = temT2 ? votosDe(mun[outroTurno] ?? null, modo, zona, secao, escola) : { nums: null, agregadaDe: 0, local: "", n: 0 };
+  const outro = temT2 ? votosDe(mun[outroTurno] ?? null, vmodo, zona, secao, escola) : { nums: null, agregadaDe: 0, local: "", n: 0 };
   const local = m && atual.local ? m.locais[atual.local] : null;
+  const nEscolas = m ? Object.keys(m.locais).length : 0;
   const pronto = !!(m && atual.nums && st);
 
   useEffect(() => {
     if (!pronto || !m) return;
-    const u = (modo === "secao" ? `?u=${uf}-${cd}-${zona}-${secao}` : `?e=${uf}-${cd}-${escola}`) + (temT2 ? `&t=${turno}` : "");
+    const u = (vmodo === "secao" ? `?u=${uf}-${cd}-${zona}-${secao}` : vmodo === "escola" ? `?e=${uf}-${cd}-${escola}` : `?c=${uf}-${cd}`) + (temT2 ? `&t=${turno}` : "");
     history.replaceState(null, "", location.pathname + u);
-    resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [pronto, modo, uf, cd, zona, secao, escola, m, turno, temT2]);
+    if (vmodo !== "cidade") resultadoRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [pronto, vmodo, uf, cd, zona, secao, escola, m, turno, temT2]);
 
   let corpo: React.ReactNode = null;
   if (pronto && atual.nums && st && m) {
@@ -151,10 +166,10 @@ export function Urna() {
     const perc = st.percentis_diferenca;
     let maisApertada = 0; while (maisApertada < 100 && perc[maisApertada + 1] < dif) maisApertada++;
     const mediaDif = Math.abs(st.media.lula - st.media.flavio);
-    const onde = modo === "secao" ? `Zona ${zona} · Seção ${secao}${atual.agregadaDe ? ` (agregada à seção ${atual.agregadaDe})` : ""}` : "Escola inteira";
-    const link = `${SITE}/urna${modo === "secao" ? `?u=${uf}-${cd}-${zona}-${secao}` : `?e=${uf}-${cd}-${escola}`}${temT2 ? `&t=${turno}` : ""}`;
+    const onde = vmodo === "secao" ? `Zona ${zona} · Seção ${secao}${atual.agregadaDe ? ` (agregada à seção ${atual.agregadaDe})` : ""}` : vmodo === "escola" ? "Escola inteira" : "Cidade inteira";
+    const link = `${SITE}/urna${vmodo === "secao" ? `?u=${uf}-${cd}-${zona}-${secao}` : vmodo === "escola" ? `?e=${uf}-${cd}-${escola}` : `?c=${uf}-${cd}`}${temT2 ? `&t=${turno}` : ""}`;
     const hoje = !temT2 && agora && agora < FECHAMENTO_2T && agora > FECHAMENTO_2T - 20 * 3600e3 ? " Hoje é o 2º turno: dá para votar até as 17h." : "";
-    const quem = modo === "secao" ? "Na minha urna" : "Na minha escola";
+    const quem = vmodo === "secao" ? "Na minha urna" : vmodo === "escola" ? "Na minha escola" : `Em ${titulo(m.nome)} (${uf})`;
     const pessoas = (n: number) => n === 1 ? "1 pessoa ficou em casa" : `${fmt(n)} pessoas ficaram em casa`;
     const o = outro.nums;
     const difO = o ? Math.abs(o.lula - o.flavio) : 0, liderO = o ? (o.lula > o.flavio ? "Lula" : o.flavio > o.lula ? "Flávio" : "") : "";
@@ -178,10 +193,11 @@ export function Urna() {
           </div>
         )}
         {atual.agregadaDe > 0 && <p className="nota">Esta seção vota junto com a seção {atual.agregadaDe}: o TSE divulga os votos das duas somados nela. Os números abaixo são dessa urna compartilhada.</p>}
-        {modo === "escola" && <p className="nota">Soma de {atual.n} seções desta escola.</p>}
-        <span className="rotulo">Diferença entre {lider ? `${lider} e ${outroCand}` : "Lula e Flávio"} {modo === "secao" ? "nesta urna" : "nesta escola"}, no {st.eleicao}</span>
+        {vmodo === "escola" && <p className="nota">Soma de {atual.n} seções desta escola.</p>}
+        {vmodo === "cidade" && <p className="nota">Toda a cidade: {fmt(atual.n)} seções em {fmt(nEscolas)} locais de votação. Escolha a zona e a seção, ou a escola, para ver a sua urna.</p>}
+        <span className="rotulo">Diferença entre {lider ? `${lider} e ${outroCand}` : "Lula e Flávio"} {vmodo === "secao" ? "nesta urna" : vmodo === "escola" ? "nesta escola" : "nesta cidade"}, no {st.eleicao}</span>
         <b className="grande">{dif === 0 ? "Empate" : dif === 1 ? "1 voto" : `${fmt(dif)} votos`}</b>
-        <span className="sub">{lider ? `${lider} na frente.` : "Empate. Um único voto a mais decidiria esta urna."}{dif > 0 && modo === "secao" && ` Mais apertada que ${maisApertada}% das urnas do Brasil.`}</span>
+        <span className="sub">{lider ? `${lider} na frente.` : "Empate. Um único voto a mais decidiria esta urna."}{dif > 0 && vmodo === "secao" && ` Mais apertada que ${maisApertada}% das urnas do Brasil.`}</span>
         <div className="barra" role="img" aria-label={`Lula ${pct(nums.lula).toFixed(0)}%, Flávio ${pct(nums.flavio).toFixed(0)}%, outros e brancos ou nulos ${pct(nums.outros + nums.branco_nulo).toFixed(0)}%, ficaram em casa ${pct(nums.abstencao).toFixed(0)}% dos aptos`}>
           <i style={{ width: `${pct(nums.lula)}%`, background: "var(--lula)" }} /><i style={{ width: `${pct(nums.flavio)}%`, background: "var(--flavio)" }} /><i style={{ width: `${pct(nums.outros + nums.branco_nulo)}%`, background: "var(--ink-3)" }} />
         </div>
@@ -197,7 +213,8 @@ export function Urna() {
         <div className="botoes">
           <a className="btn zap" href={`https://wa.me/?text=${encodeURIComponent(mensagem)}`} target="_blank" rel="noreferrer">Mandar no WhatsApp</a>
           <button className="btn" type="button" onClick={copiar}>{copiado ? "Copiado!" : "Copiar a mensagem"}</button>
-          <button className="btn" type="button" onClick={limpar}>Ver outra urna</button>
+          {vmodo !== "cidade" && <button className="btn" type="button" onClick={() => { setZona(""); setSecao(""); setEscola(""); }}>Ver a cidade inteira</button>}
+          <button className="btn" type="button" onClick={limpar}>Ver outra {vmodo === "cidade" ? "cidade" : "urna"}</button>
         </div>
         <p className="small muted">A urna média do Brasil no {st.eleicao} teve diferença de {fmt(mediaDif)} votos e {fmt(st.media.abstencao)} pessoas em casa.</p>
       </div>
