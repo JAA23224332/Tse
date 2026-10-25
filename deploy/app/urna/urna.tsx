@@ -24,6 +24,19 @@ const titulo = (s: string) => s.toLowerCase().replace(/(^|[\s(\/-])(\p{L})/gu, (
 const soma = (ls: Linha[]): Numeros => ls.reduce((a, l) => ({ aptos: a.aptos + l[2], lula: a.lula + l[3], flavio: a.flavio + l[4], outros: a.outros + l[5], branco_nulo: a.branco_nulo + l[6], abstencao: a.abstencao + l[7] }),
   { aptos: 0, lula: 0, flavio: 0, outros: 0, branco_nulo: 0, abstencao: 0 });
 const pasta = (t: Turno) => `/urna/data${t === 2 ? "/2t" : ""}`;
+type AoVivo = { pst: number; secoes: number; secoesTot: number; lula: number; flavio: number; brancos: number; nulos: number; comparecimento: number; aptos: number; dh: string };
+const n = (x: unknown) => Number(String(x ?? "0").replace(",", ".")) || 0;
+/** Resultado municipal do 2º turno direto do TSE (o portal libera CORS); uma leitura por minuto por visitante. */
+async function lerAoVivo(uf: string, cd: string): Promise<AoVivo | null> {
+  const u = uf.toLowerCase();
+  const r = await fetch(`https://resultados.tse.jus.br/oficial/ele2026/6258/dados/${u}/${u}${cd}-c0001-e006258-u.json`, { cache: "no-store" });
+  if (!r.ok) return null;
+  const d = await r.json();
+  if (String(d.ele) !== "6258") return null;
+  let lula = 0, flavio = 0;
+  for (const a of d.carg?.[0]?.agr ?? []) for (const p of a.par ?? []) for (const c of p.cand ?? []) { if (c.n === "13") lula += n(c.vap); if (c.n === "22") flavio += n(c.vap); }
+  return { pst: n(d.s?.pstn), secoes: n(d.s?.st), secoesTot: n(d.s?.ts), lula, flavio, brancos: n(d.v?.vb), nulos: n(d.v?.tvn), comparecimento: n(d.e?.c), aptos: n(d.e?.te), dh: `${d.dg ?? ""} ${d.hg ?? ""}`.trim() };
+}
 const cache = new Map<string, Promise<Mun>>();
 const carregarMun = (t: Turno, uf: string, cd: string) => {
   const k = `${t}/${uf}/${cd}`;
@@ -66,6 +79,7 @@ export function Urna() {
   const resultadoRef = useRef<HTMLDivElement>(null);
   const [agora, setAgora] = useState(0);
   useEffect(() => { setAgora(Date.now()); }, []);
+  const [aoVivo, setAoVivo] = useState<AoVivo | null>(null);
 
   const temT2 = !!stats[2];
   const turnos: Turno[] = temT2 ? [1, 2] : [1];
@@ -148,6 +162,15 @@ export function Urna() {
   const local = m && atual.local ? m.locais[atual.local] : null;
   const nEscolas = m ? Object.keys(m.locais).length : 0;
   const pronto = !!(m && atual.nums && st);
+  // 2º turno ao vivo por cidade, enquanto o 2º turno por seção não existir (depois, o dado final já está na página)
+  useEffect(() => {
+    if (!uf || !cd || temT2) { setAoVivo(null); return; }
+    let vivo = true;
+    const ler = () => lerAoVivo(uf, cd).then((r) => { if (vivo) setAoVivo(r); }).catch(() => {});
+    ler();
+    const id = setInterval(ler, 60_000);
+    return () => { vivo = false; clearInterval(id); };
+  }, [uf, cd, temT2]);
 
   useEffect(() => {
     if (!pronto || !m) return;
@@ -175,9 +198,12 @@ export function Urna() {
     const difO = o ? Math.abs(o.lula - o.flavio) : 0, liderO = o ? (o.lula > o.flavio ? "Lula" : o.flavio > o.lula ? "Flávio" : "") : "";
     const verbo = outroTurno === 1 ? "tinha ficado" : "ficou", empateV = outroTurno === 1 ? "tinha dado empate" : "deu empate";
     const comparacao = o ? ` No ${outroTurno}º turno, ${liderO ? `${liderO} ${verbo} na frente por ${difO === 1 ? "1 voto" : fmt(difO) + " votos"}` : empateV} e ${pessoas(o.abstencao)}.` : "";
+    const av = vmodo === "cidade" && aoVivo && aoVivo.secoes > 0 ? aoVivo : null;
+    const avTot = av ? av.lula + av.flavio : 0;
+    const linhaAoVivo = av && avTot ? ` Agora, no 2º turno, com ${av.pst.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% das urnas da cidade apuradas: Lula ${fmt(av.lula)} × Flávio ${fmt(av.flavio)}.` : "";
     const mensagem = (lider
       ? `${quem}, no ${st.eleicao}, a diferença entre ${lider} e ${outroCand} foi de ${dif === 1 ? "1 voto" : fmt(dif) + " votos"}. ${pessoas(nums.abstencao)}.`
-      : `${quem}, no ${st.eleicao}, Lula e Flávio empataram. ${pessoas(nums.abstencao)}.`) + comparacao + hoje + `\nConfere a sua: ${link}`;
+      : `${quem}, no ${st.eleicao}, Lula e Flávio empataram. ${pessoas(nums.abstencao)}.`) + comparacao + linhaAoVivo + hoje + `\nConfere a sua: ${link}`;
     const copiar = async () => {
       try { await navigator.clipboard.writeText(mensagem); }
       catch { const ta = document.createElement("textarea"); ta.value = mensagem; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
@@ -208,6 +234,18 @@ export function Urna() {
           <div className="cx"><b>{fmt(nums.branco_nulo)}</b><span>branco ou nulo{o ? ` · ${outroTurno}º turno: ${fmt(o.branco_nulo)}` : ""}</span></div>
           <div className="cx larga"><b className="ouro">{fmt(nums.abstencao)}</b><span>ficaram em casa, de {fmt(nums.aptos)} que podiam votar{nums.abstencao > dif && dif > 0 ? ". Mais gente do que a diferença." : ""}{o ? `. No ${outroTurno}º turno, ${fmt(o.abstencao)} ficaram em casa.` : ""}</span></div>
         </div>
+        {vmodo === "cidade" && !temT2 && (
+          av && avTot ? (
+            <div className="aovivo-cidade">
+              <span className="rot"><span className="ao" aria-hidden="true" />2º turno agora · {av.pst.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% das urnas da cidade apuradas · TSE {av.dh}</span>
+              <div className="duo"><b className="lula">{(100 * av.lula / avTot).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</b><b className="flavio">{(100 * av.flavio / avTot).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%</b></div>
+              <div className="barra"><i style={{ width: `${100 * av.lula / avTot}%`, background: "var(--lula)" }} /><i style={{ width: `${100 * av.flavio / avTot}%`, background: "var(--flavio)" }} /></div>
+              <span className="small muted">Lula {fmt(av.lula)} · Flávio {fmt(av.flavio)} · diferença {fmt(Math.abs(av.lula - av.flavio))} · brancos e nulos {fmt(av.brancos + av.nulos)}{av.aptos ? ` · abstenção até agora ${(100 * (1 - av.comparecimento / av.aptos)).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : ""}. Atualiza a cada minuto.</span>
+            </div>
+          ) : (
+            <p className="nota">{agora && agora >= FECHAMENTO_2T ? "A contagem do 2º turno desta cidade aparece aqui, ao vivo, assim que o TSE totalizar as primeiras urnas." : "Hoje à noite, a partir das 17h, a contagem do 2º turno desta cidade aparece aqui ao vivo. Por seção e por escola, o TSE publica dias depois."}</p>
+          )
+        )}
         {o && <p className="nota">{virou ? `Esta urna virou: ${liderO} estava na frente no ${outroTurno}º turno e ${lider} ficou na frente no ${turno}º.` : `No ${outroTurno}º turno a diferença foi de ${difO === 1 ? "1 voto" : fmt(difO) + " votos"}${liderO ? `, com ${liderO} na frente` : ", empate"}.`}</p>}
         <p className="msg" aria-label="Mensagem para compartilhar">{mensagem.split("\n").map((l, i) => <span key={i}>{l}<br /></span>)}</p>
         <div className="botoes">

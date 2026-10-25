@@ -26,3 +26,8 @@
 .urna .info p{margin:0;font-size:14px;line-height:1.55}.urna .info .destaque{border-left:4px solid #1f6f4a;padding-left:12px}
 @media(max-width:360px){.urna .dupla,.urna .grade{grid-template-columns:1fr}}
 .urna .abas.turnos{margin:2px 0 4px}
+.urna .aovivo-cidade{display:grid;gap:8px;padding:12px 14px;border-radius:var(--r);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--ouro)}
+.urna .aovivo-cidade .rot{font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.urna .aovivo-cidade .ao{display:inline-block;width:7px;height:7px;border-radius:50%;background:#ff5c45;margin-right:7px;vertical-align:1px;animation:urna-ao 1.6s ease-in-out infinite}@keyframes urna-ao{50%{opacity:.25}}
+.urna .aovivo-cidade .duo{display:flex;justify-content:space-between}.urna .aovivo-cidade .duo b{font-family:var(--fd);font-weight:500;font-size:34px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.urna .aovivo-cidade .barra{margin:0}
