@@ -89,6 +89,7 @@ async function apuracaoAoVivo() {
         diferenca_votos: Math.abs(b.lula - b.flavio), quem_lidera: b.lula > b.flavio ? "Lula" : b.flavio > b.lula ? "Flávio Bolsonaro" : "empate",
         brancos: b.brancos, nulos: b.nulos, abstencao_pct_nas_urnas_apuradas: b.abstencao != null && b.abstencao + b.comparecimento > 0 ? um(100 * b.abstencao / (b.abstencao + b.comparecimento)) : null,
         projecao_do_painel: ptot ? { pct_lula: um(100 * b.projLula / ptot), pct_flavio: um(100 * b.projFlavio / ptot), margem_mais_ou_menos_pontos: b.faixa,
+          leitura_da_margem: b.faixa != null && Math.abs(100 * b.projLula / ptot - 50) < b.faixa ? "empate técnico: a diferença projetada está DENTRO da margem (use exatamente esta leitura)" : "diferença projetada FORA da margem (use exatamente esta leitura)",
           observacao: "projeção estatística DESTE PAINEL (não do TSE): aplica ao que falta apurar a mudança observada desde o 1º turno. Nunca atribuir ao TSE; nunca dizer que alguém 'vencerá'." } : null,
         por_uf: (d.ufs as UF[]).map((u) => ({ uf: u.uf, secoes_apuradas_pct: um(u.pst), votos_lula: u.lula, votos_flavio: u.flavio,
           pct_lula: u.lula + u.flavio ? um(100 * u.lula / (u.lula + u.flavio)) : null,
@@ -212,7 +213,7 @@ Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
 - A projeção é uma estimativa estatística DESTE PAINEL, com margem (±). O TSE não faz projeção: nunca escreva "projeção do TSE".
   Fraseado obrigatório, sempre neste formato: "A projeção do painel aponta Lula X% × Flávio Y% (±Z pontos)." Depois, se quiser,
-  "diferença fora/dentro da margem". O verbo vencer (vencerá, vai vencer, venceu, vitória, eleito) é proibido em qualquer frase
+  a leitura_da_margem exatamente como vem na ferramenta (não calcule se está dentro ou fora). O verbo vencer (vencerá, vai vencer, venceu, vitória, eleito) é proibido em qualquer frase
   sobre projeção: quem declara vencedor é o TSE, ao fim da totalização. Use os percentuais projetados dos dois candidatos exatamente como vêm
   (pct_lula_projetado_painel e pct_flavio_projetado_painel); não calcule um a partir do outro.
 - Para cruzar a apuração com a estratégia (ex.: "Lula está melhor ou pior que no 1º turno em MG?"), use a mudança desde o
