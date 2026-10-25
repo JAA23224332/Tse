@@ -19,7 +19,7 @@ export default async function Codigos() {
       <header className="head">
         <span className="eyebrow">Raio-X Eleitoral · entrada sem e-mail</span>
         <h1>Códigos de acesso</h1>
-        <p className="muted">Gere um código e mande pelo WhatsApp. A pessoa abre o Raio-X, digita nome, e-mail e o código, e entra na hora, já aprovada. Com nome e e-mail, o código fica amarrado àquela pessoa (1 uso). Sem e-mail, vale para um grupo (ex.: 30 usos para uma coordenação).</p>
+        <p className="muted">Com nome e e-mail, você gera um <b>link pessoal</b>: manda por e-mail ou WhatsApp uma vez só, e a pessoa entra por ele sempre que precisar, sem pedir acesso de novo (padrão: 100 entradas em 120 dias; revogável aqui). Sem e-mail, o código vale para um grupo (ex.: 30 usos para uma coordenação) e cada um digita o próprio e-mail.</p>
         <nav className="small" style={{ display: "flex", gap: 14 }}><a href="/admin" style={{ color: "var(--ink)" }}>Acessos</a><a href="/admin/solicitacoes" style={{ color: "var(--ink)" }}>Solicitações</a><a href="/admin/links" style={{ color: "var(--ink)" }}>Links</a></nav>
       </header>
       <Gerador />

@@ -1,24 +1,29 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { gerarCodigo } from "@/lib/codigos";
+import { mailto, mensagemAcesso, whatsapp } from "@/lib/mensagem_acesso";
 
-/** Código de acesso amarrado ao e-mail do pedido: mostra o ativo ou gera um novo, com envio pelo WhatsApp. */
-export function CodigoBotao({ nome, email, whatsapp, ativo }: { nome: string; email: string; whatsapp: string | null; ativo: string | null }) {
+/** Acesso pessoal amarrado ao e-mail do pedido: mostra o link ativo ou gera um novo, com envio por e-mail ou WhatsApp. */
+export function CodigoBotao({ nome, email, whatsapp: numero, ativo }: { nome: string; email: string; whatsapp: string | null; ativo: string | null }) {
   const [estado, acao, pendente] = useActionState(gerarCodigo, null);
+  const [copiado, setCopiado] = useState(false);
   const codigo = estado?.codigo ?? ativo;
-  const numero = (whatsapp ?? "").replace(/\D/g, "");
-  const texto = codigo ? `${nome.split(" ")[0]}, seu código de acesso ao Raio-X Eleitoral (painel 2º Turno 2026): ${codigo}. Abra https://segundoturno.blog/analista, aba "Tenho um código", e informe o e-mail ${email} e o código.` : "";
+  const m = codigo ? mensagemAcesso(codigo, nome, email, estado?.dias) : null;
   return (
-    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-      {codigo ? (
+    <div style={{ display: "grid", gap: 6 }}>
+      {codigo && m?.link ? (
         <>
-          <span className="small muted">Código:</span><code style={{ fontSize: 15, letterSpacing: ".06em" }}>{codigo}</code>
-          <a className="btn primary" href={`https://wa.me/${numero ? (numero.startsWith("55") ? numero : "55" + numero) : ""}?text=${encodeURIComponent(texto)}`} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>Enviar código pelo WhatsApp</a>
+          <span className="small muted">Link pessoal: <code style={{ fontSize: 12, wordBreak: "break-all" }}>{m.link}</code></span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <a className="btn primary" href={mailto(email, m.assunto, m.corpo)} style={{ textDecoration: "none" }}>Enviar por e-mail</a>
+            <a className="btn primary" href={whatsapp(numero, m.corpo)} target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>Enviar pelo WhatsApp</a>
+            <button className="btn" type="button" onClick={async () => { try { await navigator.clipboard.writeText(m.link!); setCopiado(true); setTimeout(() => setCopiado(false), 1500); } catch {} }}>{copiado ? "Copiado" : "Copiar link"}</button>
+          </div>
         </>
       ) : (
-        <form action={acao} style={{ display: "contents" }}>
-          <input type="hidden" name="nome" value={nome} /><input type="hidden" name="email" value={email} /><input type="hidden" name="dias" value="14" />
-          <button className="btn primary" type="submit" disabled={pendente}>{pendente ? "Gerando…" : "Gerar código de acesso"}</button>
+        <form action={acao} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <input type="hidden" name="nome" value={nome} /><input type="hidden" name="email" value={email} />
+          <button className="btn primary" type="submit" disabled={pendente}>{pendente ? "Gerando…" : "Gerar link de acesso"}</button>
         </form>
       )}
       {estado?.erro && <span className="erro small">{estado.erro}</span>}

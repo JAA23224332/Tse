@@ -25,8 +25,9 @@ export async function POST(req: Request) {
     where codigo = ${codigo} and not revogado and expira_em > now() and usos < usos_max and (email is null or email = ${email})
     returning codigo, nota, nome`) as { codigo: string; nota: string | null; nome: string | null }[];
   if (!c) return Response.json({ erro: "Código inválido, vencido, já usado ou não é para este e-mail. Peça outro à administração." }, { status: 400 });
+  // nome: o digitado, senão o do código; pelo link pessoal ninguém digita nada, então cai no e-mail
   if (nome.length < 3) nome = c.nome ?? "";
-  if (nome.length < 3) { await sql`update codigos_acesso set usos = usos - 1 where codigo = ${codigo}`; return Response.json({ erro: "Informe seu nome completo." }, { status: 400 }); }
+  if (nome.length < 3) nome = email.split("@")[0];
 
   const clerk = await clerkClient();
   let user = (await clerk.users.getUserList({ emailAddress: [email] })).data[0];
@@ -48,5 +49,6 @@ export async function POST(req: Request) {
   }).catch(() => null);
   const j = ((await r?.json().catch(() => null)) ?? {}) as { token?: string };
   if (!j.token) return Response.json({ erro: "Não foi possível abrir a sessão. Tente de novo." }, { status: 500 });
+  console.log("entrada com código", codigo, "de", email.replace(/^(.).*@/, "$1***@"), "ip", ip);
   return Response.json({ ok: true, ticket: j.token });
 }
