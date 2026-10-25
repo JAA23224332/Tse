@@ -6,6 +6,10 @@
   var texto = "", titulo = "", classe = "";
   var pc = function (x) { return x.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%"; };
 
+  function regressiva() {
+    var f = Math.max(0, ABERTURA - Date.now()), h = Math.floor(f / 3600e3), m = Math.floor(f % 3600e3 / 60e3), s = Math.floor(f % 60e3 / 1000);
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+  }
   function render() {
     var el = document.getElementById("aovivo");
     if (!el) return;
@@ -25,7 +29,7 @@
       titulo = "Contagem oficial do TSE, 2º turno. Abra a apuração para ver a projeção.";
       classe = fim ? "fim" : "vivo";
     } else if (d.modo === "aguardando" || (Date.now() < ABERTURA && Date.now() > ABERTURA - 12 * 3600e3)) {
-      texto = Date.now() < ABERTURA ? "Apuração ao vivo às 17h" : "Apuração: aguardando as primeiras seções";
+      texto = Date.now() < ABERTURA ? "Apuração em " + regressiva() : "Apuração: aguardando as primeiras seções";
       titulo = "Os números do 2º turno aparecem aqui assim que o TSE começar a totalizar.";
       classe = "espera";
     } else {
@@ -42,5 +46,6 @@
   window.__aovivo = { render: render };
   buscar();
   setInterval(buscar, 60000);
+  setInterval(function () { if (classe === "espera" && Date.now() < ABERTURA) { texto = "Apuração em " + regressiva(); render(); } else if (classe === "espera" && texto.indexOf("em ") === 9) { texto = "Apuração: aguardando as primeiras seções"; render(); } }, 1000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) buscar(); });
 })();

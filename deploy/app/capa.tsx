@@ -27,6 +27,13 @@ export function Capa() {
   const [agora, setAgora] = useState(0);
   const [ufAtiva, setUfAtiva] = useState("");
   const [demo, setDemo] = useState(false); // ?demo=1: mostra o 1º turno como se fosse a contagem, para conferir o visual
+  const [telao, setTelao] = useState(false); // modo telão: sem barra, tudo maior, para a sala de apuração
+  useEffect(() => {
+    document.body.classList.toggle("telao", telao);
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setTelao(false); };
+    window.addEventListener("keydown", esc);
+    return () => { document.body.classList.remove("telao"); window.removeEventListener("keydown", esc); };
+  }, [telao]);
 
   useEffect(() => {
     let vivo = true;
@@ -63,12 +70,26 @@ export function Capa() {
   const ativa = ufs.find((u) => u.uf === ufAtiva);
   const r1 = resumo.brasil;
   const pct1Flavio = 100 * r1.flavio / r1.validos, pct1Lula = 100 * r1.lula / r1.validos;
+  const relogioBR = agora ? new Date(agora).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+  const idadeS = d && agora ? Math.max(0, Math.round((agora - Date.parse(d.atualizado)) / 1000)) : null;
+  const pendentes = oficial ? [...ufs].filter((u) => u.pst < 99).sort((a, b) => b.eleitorado - a.eleitorado).slice(0, 6) : [];
+  let manchete = "";
+  if (b && tot) {
+    const lider = b.lula > b.flavio ? "Lula" : "Flávio Bolsonaro", vant = Math.abs(b.lula - b.flavio);
+    manchete = fim
+      ? `${lider} vence com ${pc(Math.max(contLula, 100 - contLula))} dos votos válidos entre os dois, ${fmt(vant)} votos de vantagem.`
+      : `${lider} lidera por ${fmt(vant)} votos com ${pc(b.pst)} das urnas apuradas` + (temProj ? (empate ? "; a projeção indica empate técnico." : `; a projeção indica ${projLula >= 50 ? "Lula" : "Flávio Bolsonaro"} com ${pc(Math.max(projLula, 100 - projLula))} (±${faixa?.toLocaleString("pt-BR")}).`) : ".");
+  }
 
   return (
     <main className="capa">
       <section className="hero">
         <div className="hero-txt">
-          <span className="eyebrow"><span className="ao" aria-hidden="true" />{oficial ? `Apuração oficial do TSE · ${fim ? "totalização concluída" : "atualiza a cada minuto"}` : "2º turno · 25 de outubro de 2026"}</span>
+          <div className="topo">
+            <span className="eyebrow"><span className="ao" aria-hidden="true" />{oficial ? `Apuração oficial do TSE · ${fim ? "totalização concluída" : idadeS != null ? `atualizado há ${idadeS} s` : "atualiza a cada minuto"}` : "2º turno · 25 de outubro de 2026"}</span>
+            <span className="hora" aria-label="Horário de Brasília"><b>{relogioBR}</b> Brasília</span>
+            <button type="button" className="btn telao-btn" onClick={() => setTelao(!telao)} title="Tela cheia para projetar (Esc sai)">{telao ? "Sair do telão" : "Modo telão"}</button>
+          </div>
           {!oficial && (
             <>
               <h1>{agora && agora < ABERTURA ? <>A apuração começa <i>às 17h</i></> : <>Aguardando as <i>primeiras urnas</i></>}</h1>
@@ -86,14 +107,19 @@ export function Capa() {
               </div>
               <div className="bar"><i style={{ flex: b.lula || 1 }} /><i style={{ flex: b.flavio || 1 }} /></div>
               <div className="kv"><span>Diferença <b>{fmt(Math.abs(b.lula - b.flavio))}</b> votos</span><span>Abstenção <b>{b.eleitorado ? pc(100 * (1 - b.comparecimento / b.eleitorado)) : "—"}</b></span><span>Brancos e nulos <b>{fmt(b.brancos + b.nulos)}</b></span><span>TSE <b>{b.dh}</b></span></div>
+              {manchete && <p className="manchete">{manchete}</p>}
               {temProj && !fim && (
                 <div className={"proj" + (empate ? " empate" : "")}>
                   <span className="rot">Projeção do resultado final · margem ±{faixa?.toLocaleString("pt-BR")} pontos</span>
                   <div className="pl"><b className="lula">{pc(projLula)}</b><span>Lula</span><span className="sep" /><span>Flávio</span><b className="flavio">{pc(100 - projLula)}</b></div>
+                  <Medidor valor={projLula} faixa={faixa ?? 0} contado={contLula} />
                   <span className="muted small">{empate ? "Empate técnico: a diferença projetada está dentro da margem." : b.pst < 30 ? "Projeção ainda instável: poucas seções apuradas." : b.pst < 80 ? "Projeção com base sólida." : "Projeção próxima do resultado final."} Atualizado {hora(d!.atualizado)}.</span>
                 </div>
               )}
             </>
+          )}
+          {pendentes.length > 0 && !fim && (
+            <div className="faltam"><span className="rot">Ainda por apurar</span>{pendentes.map((u) => <span key={u.uf} className="chip"><b>{u.uf}</b> {pc(u.pst, 0)}</span>)}</div>
           )}
           {erro && <p className="alerta">{erro}</p>}
           <div className="atalhos">
@@ -163,5 +189,22 @@ export function Capa() {
       </section>
       <Credito />
     </main>
+  );
+}
+
+/** Régua de 40% a 60%: faixa da projeção (sombreada), ponto projetado e marca do contado. */
+function Medidor({ valor, faixa, contado }: { valor: number; faixa: number; contado: number }) {
+  const W = 600, H = 34, L = 20, R = 20, a = 40, z = 60;
+  const x = (v: number) => L + (W - L - R) * (Math.max(a, Math.min(z, v)) - a) / (z - a);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="medidor" role="img" aria-label={`Projeção de Lula ${valor.toFixed(1)}% com margem de ${faixa} pontos; contado ${contado.toFixed(1)}%`}>
+      <line x1={L} x2={W - R} y1={16} y2={16} stroke="#34483f" strokeWidth="2" />
+      <line x1={x(50)} x2={x(50)} y1={4} y2={28} stroke="#aab7b0" strokeWidth="1.5" strokeDasharray="3 3" />
+      <rect x={x(valor - faixa)} y={10} width={Math.max(2, x(valor + faixa) - x(valor - faixa))} height={12} rx={6} fill="#e9c46a" opacity="0.28" />
+      <circle cx={x(contado)} cy={16} r={4} fill="none" stroke="#aab7b0" strokeWidth="1.5" />
+      <circle cx={x(valor)} cy={16} r={6} fill={valor >= 50 ? "#ff6f69" : "#86a2f7"} stroke="#0c1412" strokeWidth="2" />
+      {[40, 45, 50, 55, 60].map((v) => <text key={v} x={x(v)} y={H - 2} textAnchor="middle">{v}%</text>)}
+      <text x={L} y={8} fill="#86a2f7">◀ Flávio</text><text x={W - R} y={8} textAnchor="end" fill="#ff6f69">Lula ▶</text>
+    </svg>
   );
 }

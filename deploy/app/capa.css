@@ -37,3 +37,25 @@
 .capa .mais{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
 .capa .mais a{display:grid;gap:4px;padding:16px 18px;background:var(--surface);border-radius:var(--rp);text-decoration:none;color:var(--ink);border:1px solid transparent}
 .capa .mais a:hover{border-color:var(--line-2)}.capa .mais a span{font-size:13px;color:var(--ink-2)}
+
+/* topo: estado, relógio e telão */
+.capa .topo{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.capa .hora{font-size:13px;color:var(--ink-3);font-variant-numeric:tabular-nums}.capa .hora b{font-family:var(--fd);font-size:18px;font-weight:500;color:var(--ink);letter-spacing:.01em}
+.capa .telao-btn{margin-left:auto;padding:6px 10px;font-size:12.5px}
+.capa .manchete{margin:0;font-size:clamp(16px,1.6vw,19px);line-height:1.4;color:var(--ink);border-left:3px solid var(--ouro);padding-left:12px}
+.capa .medidor{width:100%;height:auto;margin-top:2px}.capa .medidor text{font:10.5px var(--fb);fill:var(--ink-3)}
+.capa .faltam{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.capa .faltam .rot{font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+.capa .faltam .chip{font-size:12.5px;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);font-variant-numeric:tabular-nums}.capa .faltam .chip b{color:var(--ink);margin-right:3px}
+/* modo telão: sem barra, tudo maior */
+body.telao #navig{display:none}
+body.telao .capa{max-width:1700px;padding:24px 36px 40px;gap:28px}
+body.telao .capa .hero{grid-template-columns:minmax(0,1.3fr) minmax(360px,.7fr);gap:48px}
+body.telao .capa h1{font-size:clamp(40px,4.6vw,72px)}
+body.telao .capa .cand b{font-size:clamp(72px,9.5vw,150px)}
+body.telao .capa .cand span,body.telao .capa .kv{font-size:16px}
+body.telao .capa .manchete{font-size:clamp(18px,1.8vw,24px)}
+body.telao .capa .proj .pl b{font-size:52px}
+body.telao .capa .azulejos{max-width:520px}body.telao .capa .azulejos .az{font-size:14px}body.telao .capa .azulejos .az span{font-size:13px}
+body.telao .capa .hora b{font-size:26px}
+body.telao .capa .mais,body.telao .capa .atalhos{display:none}
+body.telao .capa .relogio b{font-size:clamp(72px,10vw,140px)}
