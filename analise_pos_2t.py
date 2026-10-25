@@ -102,7 +102,14 @@ if __name__ == "__main__":
         out[out.virou].to_excel(xw, "Municípios que viraram", index=False)
         out.nlargest(300, "eleitorado").to_excel(xw, "300 maiores", index=False)
         out.to_excel(xw, "Todos", index=False)
+    def limpo(x):  # NaN/Infinity não existem em JSON (apuração parcial: UF ou exterior ainda sem votos) → null
+        if isinstance(x, dict): return {k: limpo(v) for k, v in x.items()}
+        if isinstance(x, list): return [limpo(v) for v in x]
+        if isinstance(x, (float, np.floating)): return None if not np.isfinite(x) else float(x)
+        if isinstance(x, np.integer): return int(x)
+        if isinstance(x, np.bool_): return bool(x)
+        return x
     with open(f"{T}/balanco_2t_dados.json", "w", encoding="utf-8") as f:
-        json.dump({"brasil": brasil, "premissa_vs_real": premissa_vs_real, "ufs": por_uf.reset_index().to_dict(orient="records"),
-                   "territorios": por_terr.reset_index().to_dict(orient="records") if len(por_terr) else []}, f, ensure_ascii=False)
+        json.dump(limpo({"brasil": brasil, "premissa_vs_real": premissa_vs_real, "ufs": por_uf.reset_index().to_dict(orient="records"),
+                         "territorios": por_terr.reset_index().to_dict(orient="records") if len(por_terr) else []}), f, ensure_ascii=False, allow_nan=False)
     print(json.dumps(brasil, ensure_ascii=False, indent=1)); print(por_uf[["pct_lula_1t", "pct_lula_2t", "swing_lula_pp", "virou"]].head(10))

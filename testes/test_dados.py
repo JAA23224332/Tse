@@ -102,7 +102,11 @@ def test_segundo_turno_se_existir():
         pytest.skip("2º turno ainda não coletado")
     t2 = pd.read_csv(arq, sep=";", dtype={"cd_tse": str})
     t1 = pd.read_csv(f"{T}/presidente_1t_2026_municipio.csv", sep=";", dtype={"cd_tse": str})
+    meta = _json_estrito(f"{T}/coleta_2t_meta.json")
     assert len(t2) == len(t1)
-    assert (t2.validos > 0).mean() > 0.99, "2º turno com municípios zerados: coleta parcial?"
     assert len([c for c in t2.columns if "(" in c]) == 2
-    assert _json_estrito(f"{T}/coleta_2t_meta.json")["totalizacao_final"] is True
+    if meta["pct_secoes"] == 0:
+        pytest.skip("2º turno ainda sem seções apuradas (ensaio)")
+    assert t2.validos.sum() > 0
+    if meta["totalizacao_final"]:  # coleta da madrugada (--parcial, ~99%) não precisa ter todos os municípios
+        assert (t2.validos > 0).mean() > 0.99, "2º turno final com municípios zerados"
