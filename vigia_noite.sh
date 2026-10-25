@@ -33,7 +33,7 @@ echo "$SAUDE" | grep -q '"ok":true' && ok "saúde: ${SAUDE:0:160}" || al "saúde
 # 4) apuração servida × TSE
 TMP=$(mktemp -d); curl -s -m 30 $S/api/apuracao > $TMP/ap.json; curl -s -m 20 https://resultados.tse.jus.br/oficial/ele2026/6258/dados/br/br-c0001-e006258-u.json > $TMP/tse.json
 AP=$(head -c 2000 $TMP/ap.json)
-python3 - "$AGORA" "$ABERTURA" "$TMP" <<'EOF'
+python3 - "$AGORA" "$ABERTURA" "$TMP" <<'EOF' | tee "$TMP/py.out"
 import json, sys, os
 agora, abertura, tmp = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
 def ler(nome):
@@ -58,15 +58,17 @@ if tse:
         if fonte not in ("neon", "memoria") and agora > abertura + 600: print("ALERTA site lendo o TSE por conta própria (coletor não está gravando?)")
         if idade > 300: print(f"ALERTA dado do site com {idade}s de idade")
         tot = (b.get("lula") or 0) + (b.get("flavio") or 0)
-        if tot and lula + flavio and abs(((b["lula"] - b["flavio"]) / tot) - ((lula - flavio) / (lula + flavio))) > 0.03 and abs(n(b.get("pst")) - pst) < 3:
-            print("ALERTA margem do site difere do TSE em mais de 3 pontos com apuração parecida")
+        # só compara quando os dois leram a mesma totalização (mesmo % apurado) e já há volume (>5%)
+        if tot and lula + flavio and pst > 5 and abs(n(b.get("pst")) - pst) < 0.01 and abs(((b["lula"] - b["flavio"]) / tot) - ((lula - flavio) / (lula + flavio))) > 0.01:
+            print("ALERTA margem do site difere do TSE na mesma totalização")
     else:
         if agora > abertura + 1800: print("ALERTA TSE ainda sem nenhuma seção 30 min depois das 17h (conferir portal do TSE)")
     if ap.get("falhas"): print(f"ALERTA UFs sem resposta na última varredura: {ap.get('falhas')}")
 else:
     print("ALERTA arquivo nacional do TSE não respondeu")
 EOF
-echo "$AP" | grep -q '"erro"' && al "api/apuracao devolveu erro"; rm -rf "$TMP"
+echo "$AP" | grep -q '"erro"' && al "api/apuracao devolveu erro"
+grep -q "^ALERTA" "$TMP/py.out" 2>/dev/null && ALERTAS=1; rm -rf "$TMP"
 
 # 5) snapshots avançando (depois que a apuração começar)
 SNAP=$(echo "$SAUDE" | grep -oE '"snapshots":[0-9]+' | grep -oE '[0-9]+')
