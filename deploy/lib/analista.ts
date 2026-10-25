@@ -126,6 +126,9 @@ export function criarAnalista(context: ContextoAnalista) {
   return new ToolLoopAgent({
     // a chamada de proximas_perguntas encerra a resposta: evita o modelo repetir o texto depois dela
     stopWhen: [stepCountIs(20), hasToolCall("proximas_perguntas")],
+  // O modelo às vezes ignora a instrução e responde de memória (testado em 25/10: números e municípios inventados).
+  // Primeiro passo obrigatoriamente consulta os dados ou a apuração; depois ele decide sozinho.
+  prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: "required", activeTools: ["consultar_sql", "apuracao_ao_vivo"] } : undefined),
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
