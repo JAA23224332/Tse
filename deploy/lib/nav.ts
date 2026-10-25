@@ -44,6 +44,7 @@ export function navHtml(atual: string, email: string | null, admin: boolean, com
 #navig #aovivo.vivo{border-color:#e9c46a}#navig #aovivo.vivo::before{background:#ff5c45;animation:aovivo 1.6s ease-in-out infinite}
 #navig #aovivo.espera{color:#aab7b0}
 @keyframes aovivo{50%{opacity:.25}}@media(prefers-reduced-motion:reduce){#navig #aovivo.vivo::before{animation:none}}
+@media(max-width:1200px){#navig{font-size:13px}#navig a:not(.marca){padding:16px 6px}#navig .marca{margin-right:8px}#navig #aovivo{margin-right:8px;padding:5px 9px;font-size:12.5px}}
 @media(max-width:700px){#navig{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:0;padding:0 12px}#navig::-webkit-scrollbar{display:none}#navig a{white-space:nowrap;flex:none}#navig .marca{margin-right:8px}#navig .r{margin-left:12px;flex:none}#navig .r span{display:none}}
 </style><nav id="navig" aria-label="Páginas"><a class="marca" href="/">2º Turno <i>2026</i></a><a id="aovivo" href="/apuracao" hidden></a>${links}<span class="r">${email ? `<span>${email.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!))}</span>${admin ? '<a href="/admin">Acessos</a>' : ""}<a href="/sair">Sair</a>` : ""}</span></nav><script src="/aovivo.js" defer></script>`;
 }
