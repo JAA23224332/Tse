@@ -9,7 +9,7 @@
   function render() {
     var el = document.getElementById("aovivo");
     if (!el) return;
-    if (!texto) { el.hidden = true; return; }
+    if (!texto || location.pathname === "/") { el.hidden = true; return; }
     el.hidden = false;
     el.className = classe;
     el.title = titulo;

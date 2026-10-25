@@ -1,0 +1,39 @@
+/* Capa da noite do 2º turno */
+.capa{max-width:1200px;margin:0 auto;padding:28px 20px 64px;display:grid;gap:40px}
+.capa h1{font-size:clamp(34px,5.2vw,62px);line-height:1;letter-spacing:-.02em;margin:0}.capa h1 i{font-style:italic;color:var(--ouro)}
+.capa h2{font-size:22px;margin:0 0 14px}
+.capa .hero{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(300px,.75fr);gap:36px;align-items:start}
+@media(max-width:860px){.capa .hero{grid-template-columns:1fr}}
+.capa .hero-txt{display:grid;gap:18px}
+.capa .ao{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ouro);margin-right:8px;vertical-align:1px;animation:capa-ao 1.6s ease-in-out infinite}
+@keyframes capa-ao{50%{opacity:.25}}
+.capa .relogio{display:grid;gap:4px}.capa .relogio b{font-family:var(--fd);font-weight:500;font-size:clamp(48px,9vw,96px);line-height:1;letter-spacing:-.02em;font-variant-numeric:lining-nums tabular-nums;font-variation-settings:"opsz" 144;color:var(--ouro)}
+.capa .relogio span{font-size:14px;color:var(--ink-2)}
+.capa .ref{font-size:14px}
+.capa .placar{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end}
+.capa .cand b{display:block;font-family:var(--fd);font-weight:500;font-size:clamp(52px,8vw,112px);line-height:.95;letter-spacing:-.03em;font-variant-numeric:lining-nums tabular-nums;font-variation-settings:"opsz" 144}
+.capa .cand.lula b{color:var(--lula-2)}.capa .cand.flavio b{color:var(--flavio-2);text-align:right}
+.capa .cand span{display:block;margin-top:8px;font-size:14px;color:var(--ink-2)}.capa .cand.flavio span{text-align:right}.capa .cand strong{color:var(--ink);font-weight:600}
+.capa .bar{height:12px;display:flex;gap:2px;border-radius:6px;overflow:hidden}.capa .bar i{display:block;height:100%}.capa .bar i:first-child{background:var(--lula)}.capa .bar i:last-child{background:var(--flavio)}
+.capa .kv{display:flex;flex-wrap:wrap;gap:6px 20px;font-size:13.5px;color:var(--ink-2)}.capa .kv b{color:var(--ink);font-variant-numeric:tabular-nums}
+.capa .proj{display:grid;gap:8px;padding:16px 18px;border-radius:var(--rp);background:var(--surface);box-shadow:inset 0 0 0 1px var(--ouro)}
+.capa .proj.empate{box-shadow:inset 0 0 0 2px var(--ouro)}
+.capa .proj .rot{font-size:12.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.05em}
+.capa .proj .pl{display:flex;align-items:baseline;gap:10px;font-size:14px;color:var(--ink-2)}.capa .proj .pl b{font-family:var(--fd);font-weight:500;font-size:40px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.capa .proj .sep{flex:1;height:1px;background:var(--line-2)}
+.capa .alerta{background:var(--surface);border-left:3px solid var(--ouro);border-radius:var(--r);padding:12px 14px;font-size:14px;color:var(--ink-2);margin:0}
+.capa .atalhos{display:flex;flex-wrap:wrap;gap:10px}.capa .atalhos .btn{padding:11px 16px;font-size:14px;text-decoration:none}
+.capa .hero-mapa{display:grid;gap:14px;justify-items:center}
+.capa .azulejos{max-width:380px;width:100%}.capa .azulejos .az{position:relative;border:0;color:#0c1412;transition:opacity .4s,background .4s}
+.capa .azulejos .az b{color:inherit}.capa .azulejos .leg span{color:var(--ink-3)}
+.capa .uf-card{width:100%;max-width:380px;background:var(--surface);border-radius:var(--rp);padding:12px 14px;display:grid;gap:4px;font-size:14px}
+.capa .uf-card .duo{display:flex;justify-content:space-between}
+.capa .gov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.capa .gov{background:var(--surface);border-radius:var(--rp);padding:14px 16px;display:grid;gap:6px}
+.capa .gov-uf{font-weight:600;font-size:15px}.capa .gov-l{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:14px}.capa .gov-l b{font-family:var(--fd);font-weight:500;font-size:22px;font-variant-numeric:tabular-nums}
+.capa .gbar{height:8px;margin-top:4px}.capa .gbar i:first-child{background:var(--ouro)}.capa .gbar i:last-child{background:var(--ink-3)}
+.capa .eleito{color:var(--ouro);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.capa .evo .panel{padding:16px}.capa svg text{font:10.5px var(--fb);fill:var(--ink-3)}
+.capa .mais{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.capa .mais a{display:grid;gap:4px;padding:16px 18px;background:var(--surface);border-radius:var(--rp);text-decoration:none;color:var(--ink);border:1px solid transparent}
+.capa .mais a:hover{border-color:var(--line-2)}.capa .mais a span{font-size:13px;color:var(--ink-2)}

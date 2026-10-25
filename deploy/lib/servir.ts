@@ -33,7 +33,7 @@ export async function servirHtml(req: Request, arquivo: string, rota: string) {
     }
     cache.set(arquivo, html);
   }
-  const corpo = html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces")) + (rota === "/" ? faixaHojeHtml() : ""));
+  const corpo = html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces")) + (rota === "/painel" ? faixaHojeHtml() : ""));
   // ETag por conteúdo+pessoa: o navegador guarda a página e só rebaixa quando ela muda (a auth roda sempre)
   const etag = `"${createHash("sha1").update(corpo).digest("hex").slice(0, 20)}"`;
   const cabecalhos = { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-cache", etag, vary: "Cookie" };
