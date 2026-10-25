@@ -5,6 +5,7 @@ import type { Governadores } from "@/lib/governadores";
 import { Credito } from "@/app/credito";
 import { Linha, type Ponto } from "@/app/apuracao/linha";
 import resumo from "@/app/sign-in/resumo.json";
+import { CidadesAoVivo, MunicipiosUF, type Cidade } from "@/app/cidades";
 import "./capa.css";
 
 /** Capa do site na noite do 2º turno: placar ao vivo, Brasil em azulejos, governadores, evolução e atalhos. */
@@ -26,6 +27,7 @@ export function Capa() {
   const [erro, setErro] = useState("");
   const [agora, setAgora] = useState(0);
   const [ufAtiva, setUfAtiva] = useState("");
+  const [fixar, setFixar] = useState<Cidade | null>(null); // cidade escolhida na lista da UF → vai para "Cidades ao vivo"
   const [demo, setDemo] = useState(false); // ?demo=1: mostra o 1º turno como se fosse a contagem, para conferir o visual
   const [telao, setTelao] = useState(false); // modo telão: sem barra, tudo maior, para a sala de apuração
   useEffect(() => {
@@ -47,7 +49,9 @@ export function Capa() {
       try { const r = await fetch("/api/apuracao/governadores", { cache: "no-store" }); if (r.ok) { const j = await r.json(); if (vivo && j.ufs) setG(j); } } catch {}
       try { const r = await fetch("/api/apuracao/historico", { cache: "no-store" }); const j = await r.json(); if (vivo && j.pontos) setHist(j.pontos); } catch {}
     };
-    setDemo(new URLSearchParams(window.location.search).get("demo") === "1");
+    const q = new URLSearchParams(window.location.search);
+    setDemo(q.get("demo") === "1");
+    const ufQ = (q.get("uf") ?? "").toUpperCase(); if (/^[A-Z]{2}$/.test(ufQ)) setUfAtiva(ufQ); // ?uf=GO abre o estado
     buscar();
     const id = setInterval(buscar, 60_000);
     const relogio = setInterval(() => setAgora(Date.now()), 1000);
@@ -154,8 +158,16 @@ export function Capa() {
               {ativa.projLula + ativa.projFlavio > 0 && <span className="muted small">Projeção: Lula {pc(100 * ativa.projLula / (ativa.projLula + ativa.projFlavio))}{ativa.swingConfiavel ? "" : " (tendência nacional)"}</span>}
             </div>
           )}
+          {ufAtiva && ufAtiva !== "ZZ" && (
+            <div className="uf-card muns-card">
+              <b>Municípios de {ufAtiva}</b>
+              <MunicipiosUF uf={ufAtiva} onFixar={(c) => { setFixar(c); document.getElementById("cidades")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} />
+            </div>
+          )}
         </div>
       </section>
+
+      <div id="cidades"><CidadesAoVivo inicial={fixar} /></div>
 
       {g && g.ufs.length > 0 && (
         <section className="govs">
