@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!process.env.COLETOR_TOKEN || !igual(token, process.env.COLETOR_TOKEN)) return new Response("Não autorizado", { status: 401 });
   const ip = ipAddress(req) ?? null;
-  if (!(await dentroDoLimite(`coletar:${ip ?? "sem-ip"}`, 30))) return new Response("Muitas chamadas", { status: 429 });
+  if (!(await dentroDoLimite(`coletar:${ip ?? "sem-ip"}`, 120))) return new Response("Muitas chamadas", { status: 429 });
   try {
     const corpo = (await req.json().catch(() => null)) as { dados?: unknown } | null;
     let dados: Apuracao, origem: "servidor" | "cliente";
