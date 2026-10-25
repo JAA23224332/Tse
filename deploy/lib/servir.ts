@@ -5,7 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { geolocation, ipAddress, waitUntil } from "@vercel/functions";
 import { emailAtual, ehAdmin } from "@/lib/admin";
 import { sql } from "@/lib/db";
-import { navHtml } from "@/lib/nav";
+import { faixaHojeHtml, navHtml } from "@/lib/nav";
 
 const cache = new Map<string, string>();
 
@@ -33,7 +33,7 @@ export async function servirHtml(req: Request, arquivo: string, rota: string) {
     }
     cache.set(arquivo, html);
   }
-  const corpo = html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces")));
+  const corpo = html.replace("<body>", "<body>" + navHtml(rota, email, ehAdmin(email), !html.includes("fonts.googleapis.com/css2?family=Fraunces")) + (rota === "/" ? faixaHojeHtml() : ""));
   // ETag por conteúdo+pessoa: o navegador guarda a página e só rebaixa quando ela muda (a auth roda sempre)
   const etag = `"${createHash("sha1").update(corpo).digest("hex").slice(0, 20)}"`;
   const cabecalhos = { "content-type": "text/html; charset=utf-8", "cache-control": "private, no-cache", etag, vary: "Cookie" };

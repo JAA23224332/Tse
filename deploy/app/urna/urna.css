@@ -1,0 +1,27 @@
+/* Sua urna: página pública, celular primeiro */
+.urna.wrap{max-width:640px;gap:20px;padding-top:24px}
+.urna h1{font-size:clamp(30px,7vw,44px);line-height:1.05;margin:0}.urna h1 i{font-style:italic;color:var(--ouro)}
+.urna .panel{display:grid;gap:12px;padding:18px}
+.urna label{display:grid;gap:6px;font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);position:relative}
+.urna select,.urna input{width:100%;font-size:16px;padding:11px 12px;box-sizing:border-box}
+.urna .sug{position:absolute;top:100%;left:0;right:0;z-index:5;margin:4px 0 0;padding:4px 0;list-style:none;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r);max-height:260px;overflow:auto;text-transform:none;letter-spacing:0;font-weight:400;font-size:15px;color:var(--ink)}
+.urna .sug li{padding:9px 12px;cursor:pointer}.urna .sug li:hover{background:var(--surface-3)}
+.urna .dupla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.urna .abas{display:flex;gap:6px}.urna .abas button{flex:1;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);padding:9px 8px;border-radius:var(--r);font-size:13.5px;cursor:pointer}
+.urna .abas button[aria-selected=true]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.urna .nota{margin:0;padding:10px 12px;border-left:3px solid var(--ouro);background:var(--surface-2);border-radius:var(--r);font-size:14px;color:var(--ink-2)}
+.urna .resultado{box-shadow:inset 0 0 0 1px var(--ouro);gap:10px}
+.urna .onde{display:grid;gap:2px}.urna .onde b{font-size:15px}.urna .onde span{text-transform:uppercase;letter-spacing:.02em;font-size:11.5px}
+.urna .rotulo{font-size:13px;color:var(--ink-2);margin-top:6px}
+.urna .grande{font-family:var(--fd);font-weight:500;font-size:clamp(56px,16vw,88px);line-height:.95;letter-spacing:-.03em;font-variant-numeric:lining-nums tabular-nums;font-variation-settings:"opsz" 144}
+.urna .sub{font-size:15px;color:var(--ink-2)}
+.urna .barra{height:10px;border-radius:5px;background:var(--surface-3);overflow:hidden;display:flex;margin:6px 0}.urna .barra i{display:block;height:100%}
+.urna .grade{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.urna .cx{background:var(--surface-2);border-radius:var(--r);padding:12px 14px;display:grid;gap:2px}.urna .cx.larga{grid-column:1/-1}
+.urna .cx b{font-family:var(--fd);font-weight:500;font-size:30px;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums}.urna .cx span{font-size:13px;color:var(--ink-2)}
+.urna .cx .ouro{color:var(--ouro)}
+.urna .msg{margin:4px 0 0;padding:12px 14px;background:var(--surface-2);border-radius:var(--r);font-size:14.5px;line-height:1.5;user-select:all;overflow-wrap:anywhere}
+.urna .botoes{display:grid;gap:8px}.urna .botoes .btn{padding:13px;font-size:15px;text-align:center;text-decoration:none;font-weight:600}
+.urna .btn.zap{background:#128C4A;border-color:#128C4A;color:#fff}.urna .btn.zap:hover{filter:brightness(1.08)}
+.urna .info p{margin:0;font-size:14px;line-height:1.55}.urna .info .destaque{border-left:4px solid #1f6f4a;padding-left:12px}
+@media(max-width:360px){.urna .dupla,.urna .grade{grid-template-columns:1fr}}

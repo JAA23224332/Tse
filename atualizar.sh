@@ -81,6 +81,7 @@ rodar_turno() {
 echo "== seções e locais de votação (turno $TURNO)"
 rodar_turno locais_votacao.py
 rodar_turno secoes_2026.py
+rodar_turno gerar_urna.py   # dados estáticos da página Sua urna (sai com 3 se o CSV do turno não existe)
 
 if [ "$TURNO" = 2 ] && [ -f dados/tratados/presidente_2t_2026_municipio.csv ]; then
   echo "== balanço 1º × 2º turno"
@@ -96,7 +97,11 @@ python3 carregar_neon.py
 if [ "$PUBLICAR" = 1 ]; then
   echo "== testes antes de publicar"
   python3 -m pytest testes -q
-  echo "== publicando no Vercel"
-  (cd deploy && vercel deploy --prod --yes)
+  echo "== publicando: commit dos dados gerados e push (o Vercel constrói a partir do GitHub, se o projeto estiver ligado)"
+  git add -A deploy/public/urna/data deploy/app/analista/resumo.json deploy/app/sign-in/resumo.json dados/tratados/.secoes_carregadas 2>/dev/null || true
+  git commit -qm "Dados atualizados em $(date '+%d/%m/%Y %H:%M') (turno $TURNO)" || echo "  nada novo para commitar"
+  git push -q origin master || echo "  aviso: push falhou"
+  # CLI como segunda via: o plano gratuito limita a 5 mil arquivos enviados por dia; o pacote único reduz isso
+  (cd deploy && vercel deploy --prod --yes --archive=tgz) || echo "  aviso: deploy pela CLI falhou (cota do plano gratuito?); se o projeto está ligado ao GitHub, o push acima já publica"
 fi
 echo "concluído"

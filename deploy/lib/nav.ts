@@ -1,19 +1,30 @@
 export const NOME = "2º Turno 2026";
 export const DESCRICAO = "Resultados oficiais do TSE por estado, município e escola, estratégia de campanha, mapa, apuração ao vivo e o Raio-X Eleitoral.";
 
+// Ordem do dia da eleição (25/10): o que importa hoje vem primeiro; as ferramentas de planejamento ficam depois.
 export const PAGINAS = [
+  ["/apuracao", "Apuração ao vivo"],
+  ["/urna", "Sua urna"],
+  ["/analista", "Raio-X Eleitoral"],
   ["/", "Painel"],
   ["/estrategia", "Estratégia"],
   ["/mapa", "Mapa"],
   ["/regioes", "Bairros"],
   ["/secoes", "Seções"],
-  ["/apuracao", "Apuração ao vivo"],
-  ["/analista", "Raio-X Eleitoral"],
 ] as const;
 
 const FONTES =
   '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..700,0..100,0..1&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&display=swap">';
+
+/** Faixa do dia da eleição, logo abaixo da barra: leva ao que importa hoje. */
+export function faixaHojeHtml() {
+  return `<style>
+#hoje{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;padding:12px 16px;background:#121d1a;border-bottom:1px solid #243530;font:14px/1.3 "Schibsted Grotesk",system-ui,sans-serif;color:#aab7b0}
+#hoje b{color:#eef2ee;font-weight:600}#hoje a{display:inline-block;padding:9px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:13.5px}
+#hoje a.ap{background:#e9c46a;color:#1a1200}#hoje a.ur{background:#1a2824;color:#eef2ee;border:1px solid #34483f}
+</style><div id="hoje"><b>Hoje é o 2º turno.</b><a class="ap" href="/apuracao">Apuração ao vivo a partir das 17h</a><a class="ur" href="/urna">Por quantos votos a sua urna foi decidida?</a></div>`;
+}
 
 /** Barra de navegação em HTML puro, injetada nas páginas servidas como arquivo e usada pelas páginas React. */
 export function navHtml(atual: string, email: string | null, admin: boolean, comFontes = false) {

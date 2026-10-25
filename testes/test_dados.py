@@ -110,3 +110,20 @@ def test_segundo_turno_se_existir():
     assert t2.validos.sum() > 0
     if meta["totalizacao_final"]:  # coleta da madrugada (--parcial, ~99%) não precisa ter todos os municípios
         assert (t2.validos > 0).mean() > 0.99, "2º turno final com municípios zerados"
+
+
+def test_urna_dados():
+    """Dados estáticos da página Sua urna: exemplo de referência (Aracaju, zona 1, seção 3) e totais coerentes com a base de seções."""
+    base = "deploy/public/urna/data"
+    if not os.path.exists(f"{base}/stats.json"):
+        pytest.skip("gerar_urna.py ainda não rodou")
+    stats = _json_estrito(f"{base}/stats.json")
+    m = _json_estrito(f"{base}/mun/SE/31054.json")
+    linha = next(l for l in m["zonas"]["1"] if l[0] == 3)
+    assert linha[2:8] == [382, 170, 98, 24, 19, 71], linha
+    assert m["locais"][linha[1]][0].startswith("FRANCISCO ROSA SANTOS")
+    assert stats["total_urnas"] > 490_000 and 50 <= stats["abstencao_maior_que_diferenca"]["pct"] <= 60
+    assert len(stats["percentis_diferenca"]) == 101 and stats["percentis_diferenca"][50] == stats["mediana_diferenca"]
+    sec = pd.read_csv(f"{T}/secoes_2026.csv", sep=";", usecols=["tipo_secao", "lula", "flavio"])
+    com_voto = sec[sec.tipo_secao != "Agregada"]
+    assert stats["total_lula"] == int(com_voto.lula.sum()) and stats["total_flavio"] == int(com_voto.flavio.sum())
