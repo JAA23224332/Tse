@@ -115,7 +115,9 @@ async function apuracaoMunicipio(uf: string, municipio?: string) {
   const r = await fetch(`${SITE}/api/apuracao/uf/${u}`, { cache: "no-store", signal: AbortSignal.timeout(20000) });
   if (!r.ok) return { erro: "Sem resposta para essa UF agora." };
   const j = (await r.json()) as { dh: string; municipios: { cd: string; nome: string; eleitorado: number; pst: number; secoes: number; lula1: number; flavio1: number }[] };
-  const resumoUF = { uf: u.toUpperCase(), horario_dados_tse: j.dh, municipios: j.municipios.length, municipios_com_urnas_apuradas: j.municipios.filter((m) => m.secoes > 0).length,
+  const comUrnas = j.municipios.filter((m) => m.secoes > 0).length;
+  const resumoUF = { uf: u.toUpperCase(), horario_dados_tse: j.dh, municipios: j.municipios.length, municipios_com_urnas_apuradas: comUrnas,
+    observacao: comUrnas === 0 ? "NENHUM município desta UF tem urna apurada ainda: todos os percentuais de apuração são 0,0%. Não estime nem calcule percentuais; diga que a apuração não começou." : "secoes_apuradas_pct é o único percentual de apuração; use-o exatamente como está.",
     maiores: j.municipios.slice(0, 15).map((m) => ({ municipio: m.nome, eleitorado: m.eleitorado, secoes_apuradas_pct: um(m.pst), pct_lula_1turno: m.lula1 + m.flavio1 ? um(100 * m.lula1 / (m.lula1 + m.flavio1)) : null })) };
   if (!municipio) return resumoUF;
   const alvo = semAcento(municipio);
@@ -161,6 +163,7 @@ export function criarAnalista(context: ContextoAnalista) {
   model: apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
+  temperature: 0.2, // números: menos criatividade
   instructions: `Você é o Raio-X Eleitoral, agente de IA da campanha de Lula para o 2º turno presidencial de 2026 (${resumo.data_2t}). Apresente-se assim quando perguntarem quem você é. Seu diferencial: você consulta os dados oficiais do TSE de verdade, não opina de memória.
 Responda em português do Brasil, de forma direta e útil para quem decide onde a campanha investe tempo e gente.
 Os dados são do TSE: resultado oficial do 1º turno (${resumo.data_1t}) por município e por local de votação, resultado de 2022
@@ -199,7 +202,11 @@ Apuração do 2º turno em tempo real (25/10/2026, a partir das 17h de Brasília
 - Para qualquer pergunta sobre o resultado do 2º turno, quem está na frente, quanto já foi apurado, a projeção, um estado
   na apuração ou os governadores do 2º turno (AC, AM, DF, ES, RN, TO), chame apuracao_ao_vivo ANTES de responder.
   Para um município específico na apuração ("como está Ipameri agora?", "quais cidades de GO já apuraram mais?"), chame
-  apuracao_municipio com a UF (e o nome do município). É o menor nível que o TSE divulga em tempo real; por seção só dias depois. Nunca use
+  apuracao_municipio com a UF (e o nome do município). É o menor nível que o TSE divulga em tempo real; por seção só dias depois.
+- Use SOMENTE os números devolvidos pelas ferramentas. Nunca derive, estime ou arredonde "percentual apurado" a partir de
+  eleitorado ou de outros campos: o percentual apurado é exatamente o campo secoes_apuradas_pct. Se ele for 0, a resposta é
+  "ainda sem urnas apuradas". Fatos fixos do dia: votação das 8h às 17h de Brasília; o TSE começa a divulgar a totalização
+  logo após as 17h (não existe "boletim às 20h"). Não afirme horários diferentes desses. Nunca use
   números de memória nem de respostas anteriores: a contagem muda a cada minuto.
 - Diga sempre o percentual de seções apuradas e o horário dos dados do TSE. Separe "contado até agora" de "projeção".
 - A projeção é uma estimativa com margem (±). Não declare vencedor: o vencedor é quem o TSE declara ao fim da totalização.
