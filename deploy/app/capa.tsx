@@ -104,7 +104,7 @@ export function Capa() {
           )}
           {oficial && b && (
             <>
-              <h1>{fim ? <>Resultado <i>do 2º turno</i></> : <><i>{pc(b.pst)}</i> das urnas apuradas</>}</h1>
+              <h1>{fim ? <>Resultado <i>do 2º turno</i></> : <><i>{pc(b.pst, b.pst >= 99.95 ? 2 : 1)}</i> das urnas apuradas</>}</h1>
               <div className="placar">
                 <div className="cand lula"><b>{pc(contLula)}</b><span><strong>Lula</strong> · {fmt(b.lula)} votos</span></div>
                 <div className="cand flavio"><b>{pc(100 - contLula)}</b><span><strong>Flávio Bolsonaro</strong> · {fmt(b.flavio)} votos</span></div>
