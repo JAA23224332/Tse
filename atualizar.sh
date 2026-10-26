@@ -86,6 +86,7 @@ rodar_turno gerar_urna.py   # dados estáticos da página Sua urna (sai com 3 se
 if [ "$TURNO" = 2 ] && [ -f dados/tratados/presidente_2t_2026_municipio.csv ]; then
   echo "== balanço 1º × 2º turno"
   python3 analise_pos_2t.py
+  python3 gerar_painel.py   # de novo: o resumo do Raio-X (resumo.json) só ganha o 2º turno depois do balanço
 fi
 
 echo "== páginas e banco"
@@ -102,6 +103,9 @@ if [ "$PUBLICAR" = 1 ]; then
   git commit -qm "Dados atualizados em $(date '+%d/%m/%Y %H:%M') (turno $TURNO)" || echo "  nada novo para commitar"
   git push -q origin master || echo "  aviso: push falhou"
   # CLI como segunda via: o plano gratuito limita a 5 mil arquivos enviados por dia; o pacote único reduz isso
-  (cd deploy && vercel deploy --prod --yes --archive=tgz) || echo "  aviso: deploy pela CLI falhou (cota do plano gratuito?); se o projeto está ligado ao GitHub, o push acima já publica"
+  for tent in 1 2 3; do   # a CLI já devolveu "Not authorized" numa rodada automática e funcionou logo em seguida: tenta 3 vezes
+    (cd deploy && vercel deploy --prod --yes --archive=tgz) && break
+    echo "  aviso: deploy pela CLI falhou (tentativa $tent)"; [ $tent -lt 3 ] && sleep 40
+  done
 fi
 echo "concluído"
