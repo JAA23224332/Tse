@@ -22,7 +22,7 @@ elif pgrep -f "pos_apuracao\.s[h]" >/dev/null; then ok "vigia da madrugada rodan
 ULT=$(tail -1 logs/coletor_2026-10-25.log 2>/dev/null)
 HORA_LOG=$(echo "$ULT" | grep -oE "^[0-9]{2}:[0-9]{2}:[0-9]{2}")
 if [ -n "$HORA_LOG" ]; then
-  T_LOG=$(date -d "$HORA_LOG" +%s); DIF=$((AGORA - T_LOG))
+  T_LOG=$(date -d "$HORA_LOG" +%s); DIF=$((AGORA - T_LOG)); [ $DIF -lt 0 ] && DIF=$((DIF + 86400))  # linha de ontem após a meia-noite
   if [ $DIF -le 180 ]; then ok "coletor atualizou há ${DIF}s: ${ULT:0:110}"; else al "coletor sem atualizar há ${DIF}s: ${ULT:0:110}"; pkill -f "coletor_apuracao\.mj[s]"; acao "coletor morto para o vigia reiniciar"; fi
 else al "log do coletor sem horário: ${ULT:0:110}"; fi
 echo "$ULT" | grep -qi "erro" && al "coletor com erro na última linha"
