@@ -74,7 +74,7 @@ select{max-width:100%;min-width:0}.filters{min-width:0}.filters select{flex:0 1 
       <div class="split" id="split" aria-hidden="true"></div>
       <div class="stats" id="stats"></div>
       <nav class="toc" aria-label="Seções">
-        <a href="#simulador">Simulador</a><a href="#estados">Por estado</a><a href="#perfil">Perfil × voto</a>
+        <a href="#resultado2t" id="toc2t" hidden>Resultado 2º turno</a><a href="#simulador">Simulador</a><a href="#estados">Por estado</a><a href="#perfil">Perfil × voto</a>
         <a href="#municipios">Municípios</a><a href="#governadores">Governadores</a><a href="#ref2022">2022</a><a href="#fontes">Fontes</a>
       </nav>
     </div>
@@ -84,10 +84,26 @@ select{max-width:100%;min-width:0}.filters{min-width:0}.filters select{flex:0 1 
     </div>
   </header>
 
+  <section id="resultado2t" hidden>
+    <div class="head">
+      <h2>Resultado do 2º turno</h2>
+      <p class="muted" id="r2t-sub"></p>
+    </div>
+    <div class="stats" id="r2t-stats"></div>
+    <div class="tbl" id="r2t-uf"></div>
+    <p class="small muted">Mudança = quantos pontos a fatia de Lula entre os dois subiu ou caiu do 1º para o 2º turno. Ganho = votos a mais de cada um no 2º turno. Viraram = municípios em que o líder mudou. Clique no cabeçalho para ordenar.</p>
+    <div class="head" style="margin-top:28px"><h3>Governadores eleitos no 2º turno</h3></div>
+    <div class="govs" id="r2t-govs"></div>
+    <div class="head" style="margin-top:28px"><h3>O que a estratégia previu e o que aconteceu</h3><p class="muted" id="r2t-prem"></p></div>
+    <div class="tbl" id="r2t-terr"></div>
+    <div class="head" style="margin-top:28px"><h3>Municípios que viraram</h3><p class="muted">Os maiores eleitorados em que o líder mudou entre os turnos.</p></div>
+    <div class="tbl" id="r2t-vir"></div>
+  </section>
+
   <section id="simulador">
     <div class="head">
       <h2>Simulador de 2º turno</h2>
-      <p class="muted">Diga para onde vão os votos de quem ficou de fora e o que acontece com o comparecimento. O resultado projetado muda na hora. As premissas são suas; o painel apenas faz a conta sobre os votos reais do 1º turno.</p>
+      <p class="muted"><span id="sim-nota" hidden>O 2º turno já aconteceu; o simulador fica como registro das hipóteses feitas antes da eleição. </span>Diga para onde vão os votos de quem ficou de fora e o que acontece com o comparecimento. O resultado projetado muda na hora. As premissas são suas; o painel apenas faz a conta sobre os votos reais do 1º turno.</p>
     </div>
     <div class="chips" id="races" role="group" aria-label="Disputa"></div>
     <div class="sim">
@@ -220,7 +236,9 @@ const ELIM = Object.keys(D.candidatos_eliminados);
 const BR = D.brasil;
 
 // ---------- cabeçalho
+const T2 = D.segundo_turno || null;
 (function cabecalho() {
+  if (T2) { cabecalho2t(); return; }
   const vA = BR.flavio, vB = BR.lula, va = BR.validos;
   $("sub").textContent = `${D.atualizado}. Flávio Bolsonaro e Lula disputam a Presidência; sete estados também escolhem governador.`;
   const cand = (n, nm, p, v, cls) => `
@@ -256,6 +274,83 @@ const BR = D.brasil;
     $("municipios").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   } });
 })();
+
+// ---------- 2º turno (depois de 25/10): cabeçalho e seção de resultado
+function cabecalho2t() {
+  const o = T2.oficial, b = T2.brasil;
+  const L = o ? o.lula : b.lula_2t, F = o ? o.flavio : b.flavio_2t, va = L + F;
+  $("sub").textContent = `2º turno em 25/10/2026 — TSE, ${T2.final ? "totalização concluída" : pc(T2.pct_secoes || 0) + " das seções"}${o ? " (" + o.dh + ")" : ""}. Abaixo, o resultado final; o 1º turno e o simulador ficam como registro.`;
+  const cand = (n, nm, p, v, cls) => `
+    <div class="cand ${cls}">
+      <div class="urna"><span class="tecla ${cls}">${n}</span><span><span class="nm">${nm}</span> <span class="pt">${p}</span></span></div>
+      <div class="pct big">${pc(100 * v / va, 2)}</div>
+      <div class="votos num">${fmt(v)} votos</div>
+    </div>`;
+  const lider = L >= F;
+  $("duel").innerHTML = cand("13", "Lula", "PT", L, "lula") + `<div class="gap"><b class="num">${fmt(Math.abs(L - F))}</b><span>votos de diferença no 2º turno${lider ? "" : " (Flávio à frente)"}</span></div>` + cand("22", "Flávio Bolsonaro", "PL", F, "flavio r");
+  $("split").innerHTML = `<span style="flex:${L};background:var(--lula)" title="Lula"></span><span style="flex:${F};background:var(--flavio)" title="Flávio"></span>`;
+  const abst = o ? o.abstencao : b.abst_2t, el = o ? o.eleitorado : BR.eleitorado, bn = o ? o.brancos + o.nulos : null;
+  const st = [
+    [(b.ganho_lula >= 0 ? "+" : "") + mi(b.ganho_lula), `votos a mais de Lula desde o 1º turno (${pc(b.parcela_lula_do_crescimento_pct, 0)} do crescimento)`, "lula"],
+    [(b.ganho_flavio >= 0 ? "+" : "") + mi(b.ganho_flavio), "votos a mais de Flávio desde o 1º turno", "flavio"],
+    [mi(abst), `abstenções (${pc(100 * abst / el)} do eleitorado; 1º turno: ${pc(100 * b.abst_1t / BR.eleitorado)})`, ""],
+    [fmt(b.municipios_viraram), "municípios que mudaram de líder", "ouro"],
+  ];
+  $("stats").innerHTML = st.map(([x, y, c]) => `<div class="stat ${c}"><b>${x}</b><span>${y}</span></div>`).join("");
+  const GOV = new Set(D.governadores.map(g => g.uf));
+  const itens = {};
+  for (const u of T2.ufs) {
+    const m = u.pct_lula_2t - (100 - u.pct_lula_2t);
+    itens[u.uf] = { cor: corMargem(m), texto: (m > 0 ? "+" : "") + m.toFixed(0), gov: GOV.has(u.uf),
+      titulo: `${u.uf}: Lula ${pc(u.pct_lula_2t)} · Flávio ${pc(100 - u.pct_lula_2t)} · mudança ${u.swing_lula_pp > 0 ? "+" : ""}${u.swing_lula_pp.toFixed(1)} p.p.` };
+  }
+  const leg = `<span><i style="background:var(--lula)"></i>Lula venceu</span><span><i style="background:var(--flavio)"></i>Flávio venceu</span><span>número: margem em pontos no 2º turno</span>`;
+  document.querySelector(".mapa-az .cap").textContent = "Resultado do 2º turno por estado e a margem em pontos. Clique num estado para filtrar os municípios (1º turno).";
+  azulejos($("azul"), itens, { legenda: leg, onClick: uf => {
+    $("ufsel").value = uf; limite = 50; aberto = null; renderMun();
+    $("azul").querySelectorAll(".az").forEach(x => x.setAttribute("aria-pressed", x.dataset.uf === uf));
+    $("municipios").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  } });
+}
+const r2Sort = { k: "eleitorado", dir: -1 };
+function render2t() {
+  if (!T2) return;
+  $("resultado2t").hidden = false; $("toc2t").hidden = false;
+  const b = T2.brasil, pr = T2.premissa_vs_real;
+  $("r2t-sub").textContent = `Lula ${pc(100 * b.lula_2t / (b.lula_2t + b.flavio_2t), 2)} × Flávio Bolsonaro ${pc(100 * b.flavio_2t / (b.lula_2t + b.flavio_2t), 2)} entre os dois (soma dos municípios, exterior incluído). No 1º turno, Lula tinha ${pc(100 * b.lula_1t / (b.lula_1t + b.flavio_1t), 2)}. Os ${mi(b.eliminados_1t)} de votos dos eliminados, mais a queda da abstenção, foram ${pc(b.parcela_lula_do_crescimento_pct, 0)} para Lula.`;
+  const st = [[mi(b.lula_2t - b.lula_1t), "ganho de Lula", "lula"], [mi(b.flavio_2t - b.flavio_1t), "ganho de Flávio", "flavio"], [mi(b.abst_1t - b.abst_2t), "a menos em casa que no 1º turno", ""], [fmt(b.municipios_viraram), "municípios que viraram", "ouro"]];
+  $("r2t-stats").innerHTML = st.map(([x, y, c]) => `<div class="stat ${c}"><b>${x}</b><span>${y}</span></div>`).join("");
+  // por UF
+  const rows = T2.ufs.map(u => ({ uf: u.uf, eleitorado: u.eleitorado, p1: u.pct_lula_1t, p2: u.pct_lula_2t, sw: u.swing_lula_pp, gl: u.ganho_lula, gf: u.ganho_flavio, a1: u.pct_abst_1t, a2: u.pct_abst_2t, vir: u.virou }));
+  rows.sort((x, y) => (x[r2Sort.k] > y[r2Sort.k] ? 1 : x[r2Sort.k] < y[r2Sort.k] ? -1 : 0) * r2Sort.dir);
+  const maxS = Math.max(...rows.map(r => Math.abs(r.sw)), 0.1);
+  const bar = d => { const w = 50 * Math.abs(d) / maxS, c = d >= 0 ? "var(--b)" : "var(--a)";
+    return `<span class="mbar">${d >= 0 ? `<i style="left:50%;width:${w}%;background:${c};border-radius:0 4px 4px 0"></i>` : `<i style="right:50%;width:${w}%;background:${c};border-radius:4px 0 0 4px"></i>`}</span>`; };
+  const cols = [["uf", "UF"], ["eleitorado", "Eleitorado", 1], ["p1", "% Lula 1º t.", 1], ["p2", "% Lula 2º t.", 1], ["sw", "Mudança (p.p.)"], ["gl", "Ganho Lula", 1], ["gf", "Ganho Flávio", 1], ["a1", "Abst. 1º t.", 1], ["a2", "Abst. 2º t.", 1], ["vir", "Viraram", 1]];
+  $("r2t-uf").innerHTML = `<table><thead><tr>${cols.map(([k, l, n]) => `<th class="sortable${n ? " n" : ""}" data-k="${k}" ${r2Sort.k === k ? `aria-sort="${r2Sort.dir > 0 ? "ascending" : "descending"}"` : ""}>${l}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr><td><b>${r.uf}</b></td><td class="n">${fmt(r.eleitorado)}</td><td class="n">${pc(r.p1)}</td><td class="n ${r.p2 >= 50 ? "lula" : "flavio"}"><b>${pc(r.p2)}</b></td>
+      <td>${bar(r.sw)} <span class="num small">${r.sw > 0 ? "+" : ""}${r.sw.toFixed(1)}</span></td><td class="n">${fmt(r.gl)}</td><td class="n">${fmt(r.gf)}</td><td class="n">${pc(r.a1)}</td><td class="n">${pc(r.a2)}</td><td class="n">${r.vir}</td></tr>`).join("")}</tbody></table>`;
+  $("r2t-uf").querySelectorAll("th.sortable").forEach(th => th.onclick = () => { const k = th.dataset.k; r2Sort.dir = r2Sort.k === k ? -r2Sort.dir : -1; r2Sort.k = k; render2t(); });
+  // governadores
+  $("r2t-govs").innerHTML = T2.governadores.map(g => {
+    const [a, c] = g.candidatos, va = g.candidatos.reduce((s, x) => s + x.votos, 0);
+    return `<div class="panel gov">
+      <div class="filters" style="justify-content:space-between"><h3>${g.uf}</h3><span class="small muted num">${g.pct_secoes >= 100 ? "100% apurado" : pc(g.pct_secoes) + " apurado"}</span></div>
+      <div class="linha"><span><span class="dot" style="background:var(--ouro)"></span>${esc(titulo(a.nome))} <span class="tag">${esc(partido(a.nome))}</span> <span class="tag" style="border-color:var(--ouro);color:var(--ouro)">eleito</span></span><b>${pc(a.pct, 2)}</b></div>
+      ${c ? `<div class="linha"><span><span class="dot" style="background:var(--neutral)"></span>${esc(titulo(c.nome))} <span class="tag">${esc(partido(c.nome))}</span></span><b>${pc(c.pct, 2)}</b></div>` : ""}
+      <div class="split" aria-hidden="true"><span style="flex:${a.votos};background:var(--ouro)"></span>${c ? `<span style="flex:${c.votos};background:var(--neutral)"></span>` : ""}</div>
+      <div class="linha"><span class="muted">Diferença</span><b>${fmt(a.votos - (c ? c.votos : 0))}</b></div>
+      <div class="linha"><span class="muted">Brancos e nulos · abstenção</span><b>${fmt(g.brancos_nulos)} · ${fmt(g.abstencao)}</b></div>
+    </div>`;
+  }).join("");
+  // premissas × real
+  $("r2t-prem").textContent = `A estratégia (hipóteses iniciais) previa saldo líquido de ${pr.saldo_liquido_previsto >= 0 ? "+" : "−"}${mi(Math.abs(pr.saldo_liquido_previsto))} para Lula; o saldo real foi ${pr.ganho_liquido_real >= 0 ? "+" : "−"}${mi(Math.abs(pr.ganho_liquido_real))} (ganho de Lula menos ganho de Flávio). Por território, previsto × real e a mudança média em pontos, ponderada pelo eleitorado.`;
+  $("r2t-terr").innerHTML = `<table><thead><tr><th>Território (1º turno)</th><th class="n">Municípios</th><th class="n">Saldo previsto</th><th class="n">Saldo real</th><th class="n">Mudança média (p.p.)</th></tr></thead><tbody>${
+    T2.territorios.map(t => `<tr><td><span class="tag ${t.territorio === "Reduto de Lula" ? "lula" : t.territorio === "Reduto de Flávio" ? "flavio" : ""}">${esc(t.territorio)}</span></td><td class="n">${fmt(t.municipios)}</td><td class="n">${t.previsto >= 0 ? "+" : "−"}${fmt(Math.abs(t.previsto))}</td><td class="n ${t.real >= 0 ? "lula" : "flavio"}"><b>${t.real >= 0 ? "+" : "−"}${fmt(Math.abs(t.real))}</b></td><td class="n">${t.swing_medio_pp > 0 ? "+" : ""}${t.swing_medio_pp.toFixed(1)}</td></tr>`).join("")}</tbody></table>`;
+  // viraram
+  $("r2t-vir").innerHTML = `<table><thead><tr><th>Município</th><th class="n">Eleitorado</th><th>1º turno</th><th>2º turno</th><th class="n">% Lula 1º t.</th><th class="n">% Lula 2º t.</th></tr></thead><tbody>${
+    T2.viraram.map(([uf, nm, el, v1, v2, p1, p2]) => `<tr><td><b>${esc(titulo(nm))}</b> <span class="small muted">${uf}</span></td><td class="n">${fmt(el)}</td><td><span class="tag ${v1 === "Lula" ? "lula" : "flavio"}">${v1}</span></td><td><span class="tag ${v2 === "Lula" ? "lula" : "flavio"}">${v2}</span></td><td class="n">${pc(p1)}</td><td class="n">${pc(p2)}</td></tr>`).join("")}</tbody></table>`;
+}
 
 // ---------- disputas do simulador
 const RACES = [];
@@ -573,6 +668,7 @@ function render2022() {
     <p class="small muted" style="margin-top:8px">Maiores eliminados em 2022: ${e.map(([k, v]) => `${esc(titulo(k))} (${mi(v)})`).join(", ")}.</p>`;
 }
 
+render2t(); if (T2) $("sim-nota").hidden = false;
 // ---------- inicialização
 const sel = $("faixasel");
 sel.innerHTML = Object.keys(D.faixas).map(k => `<option>${esc(k)}</option>`).join("");

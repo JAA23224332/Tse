@@ -6,7 +6,7 @@ export const PAGINAS = [
   ["/", "Apuração ao vivo"],
   ["/urna", "Sua urna"],
   ["/analista", "Raio-X Eleitoral"],
-  ["/painel", "Painel 1º turno"],
+  ["/painel", "Painel"],
   ["/estrategia", "Estratégia"],
   ["/mapa", "Mapa"],
   ["/regioes", "Bairros"],
