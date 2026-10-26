@@ -15,7 +15,8 @@ echo "== $(date '+%d/%m %H:%M:%S')"
 # 1) processos
 if pgrep -f "coletor_apuracao\.mj[s]" >/dev/null; then ok "coletor rodando"; else
   al "coletor parado"; if ! pgrep -f "coletor_vigi[a]" >/dev/null; then (setsid nohup deploy/scripts/coletor_vigia.sh >> logs/coletor_2026-10-25.log 2>&1 < /dev/null &) ; acao "vigia do coletor religado"; fi; fi
-if pgrep -f "pos_apuracao\.s[h]" >/dev/null; then ok "vigia da madrugada rodando"; else (setsid nohup ./pos_apuracao.sh >> logs/pos_apuracao.log 2>&1 < /dev/null &); acao "vigia da madrugada religado"; fi
+if grep -q "rodada final concluída" logs/pos_apuracao.log 2>/dev/null; then ok "vigia da madrugada: rodada final já concluída (não religa)"
+elif pgrep -f "pos_apuracao\.s[h]" >/dev/null; then ok "vigia da madrugada rodando"; else (setsid nohup ./pos_apuracao.sh >> logs/pos_apuracao.log 2>&1 < /dev/null &); acao "vigia da madrugada religado"; fi
 
 # 2) coletor: última linha recente e sem erro
 ULT=$(tail -1 logs/coletor_2026-10-25.log 2>/dev/null)
