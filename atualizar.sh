@@ -44,9 +44,11 @@ if [ "$DOWNLOAD" = 1 ]; then
   baixar dados/brutos/detalhe_votacao_munzona_2022.zip "$B/detalhe_votacao_munzona/detalhe_votacao_munzona_2022.zip"
   baixar dados/brutos/secao/votacao_secao_2026_BR.zip "$B/votacao_secao/votacao_secao_2026_BR.zip"
   baixar dados/brutos/eleitorado_local_votacao_2026.zip "$B/eleitorado_locais_votacao/eleitorado_local_votacao_2026.zip"
-  [ -s dados/brutos/geo/municipios_br.geojson ] || curl -fsS --connect-timeout 20 --max-time 900 --retry 3 -o dados/brutos/geo/municipios_br.geojson.part \
-    "https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?formato=application/vnd.geo+json&intrarregiao=municipio&qualidade=minima" \
-    && mv dados/brutos/geo/municipios_br.geojson.part dados/brutos/geo/municipios_br.geojson
+  if [ ! -s dados/brutos/geo/municipios_br.geojson ]; then   # malha do IBGE só uma vez ("A || B && C" executava o mv mesmo com o arquivo presente)
+    curl -fsS --connect-timeout 20 --max-time 900 --retry 3 -o dados/brutos/geo/municipios_br.geojson.part \
+      "https://servicodados.ibge.gov.br/api/v3/malhas/paises/BR?formato=application/vnd.geo+json&intrarregiao=municipio&qualidade=minima" \
+      && mv dados/brutos/geo/municipios_br.geojson.part dados/brutos/geo/municipios_br.geojson
+  fi
 else
   echo "== sem download: usando os arquivos locais"
 fi
