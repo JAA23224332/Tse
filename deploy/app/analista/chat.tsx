@@ -154,10 +154,15 @@ function mensagemTexto(m: MensagemAnalista): string {
   return blocos.filter(Boolean).join("\n\n");
 }
 
-type Props = { modo?: "completo" | "degustacao"; perfil?: Perfil; restantes?: number; email?: string | null };
+type Props = { modo?: "completo" | "degustacao"; perfil?: Perfil; restantes?: number; email?: string | null; master?: boolean };
+const MOTORES_UI = [["mae", "API Mãe"], ["opus", "Claude Opus 5.5"], ["sonnet", "Claude Sonnet 5.5"]] as const;
 
-export function Chat({ modo = "completo", perfil = "aprovado", restantes: restantesInicial = 0, email = null }: Props) {
+export function Chat({ modo = "completo", perfil = "aprovado", restantes: restantesInicial = 0, email = null, master = false }: Props) {
   const degustacao = modo === "degustacao";
+  // motor de IA (só o usuário mestre escolhe; o servidor ignora para os demais); lembrado neste navegador
+  const [motor, setMotor] = useState<"mae" | "opus" | "sonnet">("mae");
+  useEffect(() => { try { const m = localStorage.getItem("raiox_motor"); if (m === "opus" || m === "sonnet") setMotor(m); } catch {} }, []);
+  const escolherMotor = (m: "mae" | "opus" | "sonnet") => { setMotor(m); try { localStorage.setItem("raiox_motor", m); } catch {} };
   const [restantes, setRestantes] = useState(restantesInicial);
   const [pedindo, setPedindo] = useState(false);
   const [pedidoEnviado, setPedidoEnviado] = useState(perfil === "pendente");
@@ -230,7 +235,7 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
   const conversaTexto = () => messages.map((m) => (m.role === "user" ? "PERGUNTA: " : "RAIO-X ELEITORAL: ") + textoDe(m)).join("\n\n");
   const perguntar = (texto: string) => {
     if (degustacao && restantes <= 0) { setPedindo(true); return; }
-    if (texto.trim() && !ocupado) { if (degustacao) setRestantes((r) => r - 1); sendMessage({ text: texto.trim() }); setInput(""); if (campo.current) campo.current.style.height = ""; } };
+    if (texto.trim() && !ocupado) { if (degustacao) setRestantes((r) => r - 1); sendMessage({ text: texto.trim() }, { body: { motor: master ? motor : "mae" } }); setInput(""); if (campo.current) campo.current.style.height = ""; } };
   const ajustar = (el: HTMLTextAreaElement) => { el.style.height = ""; el.style.height = Math.min(160, el.scrollHeight) + "px"; };
 
   return (
@@ -295,6 +300,12 @@ export function Chat({ modo = "completo", perfil = "aprovado", restantes: restan
           </div>
         )}
 
+        {master && (
+          <div className="motor" role="group" aria-label="Motor de IA">
+            <span className="small muted">Motor:</span>
+            {MOTORES_UI.map(([k, r]) => <button key={k} type="button" className="chip" aria-pressed={motor === k} onClick={() => escolherMotor(k)}>{r}</button>)}
+          </div>
+        )}
         <div className="fio">
           {messages.map((m) => m.role === "user" ? (
             <div key={m.id} className="turno u"><div className="balao">{m.parts.map((p, i) => p.type === "text" ? <span key={i}>{p.text}</span> : null)}</div></div>

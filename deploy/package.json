@@ -9,13 +9,14 @@
     "db:criar": "node --env-file=.env.local scripts/criar_tabela.mjs"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^3.0.68",
-    "@ai-sdk/react": "^4.0.131",
+    "@ai-sdk/anthropic": "^4.0.89",
+    "@ai-sdk/openai-compatible": "^3.0.79",
+    "@ai-sdk/react": "^4.0.158",
     "@clerk/localizations": "^4.22.0",
     "@clerk/nextjs": "^7.9.11",
     "@neondatabase/serverless": "^1.2.0",
     "@vercel/functions": "^3.9.11",
-    "ai": "^7.0.128",
+    "ai": "^7.0.154",
     "next": "^16.3.8",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

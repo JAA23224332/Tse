@@ -39,5 +39,6 @@ export default async function Analista() {
     );
   }
   if (a.perfil === "pendente") return <Aguardando email={a.email} />;
-  return <Chat modo={a.podeUsar && a.restantes === null ? "completo" : "degustacao"} perfil={a.perfil} restantes={a.restantes ?? 0} email={a.email} />;
+  const master = (a.email ?? "").toLowerCase() === (process.env.MASTER_EMAIL ?? "julianealvesdoc@gmail.com").toLowerCase();
+  return <Chat modo={a.podeUsar && a.restantes === null ? "completo" : "degustacao"} perfil={a.perfil} restantes={a.restantes ?? 0} email={a.email} master={master} />;
 }

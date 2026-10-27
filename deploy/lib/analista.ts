@@ -1,4 +1,5 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { ToolLoopAgent, hasToolCall, stepCountIs, tool, type InferAgentUIMessage } from "ai";
 import { z } from "zod";
 import { sql, sqlLeitura } from "@/lib/db";
@@ -11,6 +12,18 @@ const apiMae = createOpenAICompatible({
   apiKey: process.env.LLM_API_KEY,
 });
 export const MODELO = process.env.LLM_MODEL ?? "padrao";
+
+// Segundo motor (Anthropic), disponível só para o usuário mestre; os demais ficam na API Mãe.
+// Claude Opus 5.5 / Sonnet 5.5: sem temperature e sem tool_choice forçado (a API devolve 400); o pensamento adaptativo é o padrão.
+export type Motor = "mae" | "opus" | "sonnet";
+export const MOTORES: Record<Motor, { rotulo: string; modelo: string }> = {
+  mae: { rotulo: "API Mãe", modelo: MODELO },
+  opus: { rotulo: "Claude Opus 5.5", modelo: "claude-opus-5-5" },
+  sonnet: { rotulo: "Claude Sonnet 5.5", modelo: "claude-sonnet-5-5" },
+};
+export const MASTER_EMAIL = (process.env.MASTER_EMAIL ?? "julianealvesdoc@gmail.com").toLowerCase();
+export const temAnthropic = () => !!process.env.ANTHROPIC_API_KEY;
+const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "nao-configurado" });
 if (process.env.LLM_BASE_URL && !process.env.LLM_BASE_URL.startsWith("https://")) throw new Error("LLM_BASE_URL precisa ser https");
 
 const ESQUEMA = `
@@ -155,17 +168,19 @@ de vantagem.` + (t2
     + ` O resultado do 2º turno por município está em resultado_2t_municipio; as demais tabelas continuam com o 1º turno, base da estratégia.`
   : ` O 2º turno é em ${resumo.data_2t}.`);
 
-export function criarAnalista(context: ContextoAnalista) {
+export function criarAnalista(context: ContextoAnalista, motor: Motor = "mae") {
+  const claude = motor !== "mae" && temAnthropic();
   return new ToolLoopAgent({
     // a chamada de proximas_perguntas encerra a resposta: evita o modelo repetir o texto depois dela
     stopWhen: [stepCountIs(20), hasToolCall("proximas_perguntas")],
   // O modelo às vezes ignora a instrução e responde de memória (testado em 25/10: números e municípios inventados).
   // Primeiro passo obrigatoriamente consulta os dados ou a apuração; depois ele decide sozinho.
-  prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: "required", activeTools: ["consultar_sql", "apuracao_ao_vivo", "apuracao_municipio"] } : undefined),
-  model: apiMae.chatModel(MODELO),
+  // Claude não aceita tool_choice forçado: fica no "auto" com a instrução do prompt, limitando as ferramentas do passo 0.
+  prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: claude ? "auto" : "required", activeTools: ["consultar_sql", "apuracao_ao_vivo", "apuracao_municipio"] } : undefined),
+  model: claude ? anthropic(MOTORES[motor].modelo) : apiMae.chatModel(MODELO),
   // modelo de raciocínio: o pensamento conta nos tokens de saída
   maxOutputTokens: 8000,
-  temperature: 0.2, // números: menos criatividade
+  ...(claude ? {} : { temperature: 0.2 }), // números: menos criatividade (Claude rejeita temperature)
   instructions: `Você é o Raio-X Eleitoral, agente de IA da campanha de Lula para o 2º turno presidencial de 2026 (${resumo.data_2t}). Apresente-se assim quando perguntarem quem você é. Seu diferencial: você consulta os dados oficiais do TSE de verdade, não opina de memória.
 Responda em português do Brasil, de forma direta e útil para quem decide onde a campanha investe tempo e gente.
 Os dados são do TSE: resultado oficial do 1º turno (${resumo.data_1t}) por município e por local de votação, resultado de 2022
